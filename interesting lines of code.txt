@@ -1,0 +1,7 @@
+Interesting Lines in 19.js
+
+// 1703 - some kind of "development" switch that changes behavior?
+
+// Line 1879
+
+// Line 1952 - on all clicks? Or at least when I click on the galaxy screen

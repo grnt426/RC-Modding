@@ -1,0 +1,14 @@
+{
+  "name": "RCMods",
+  "version": "1.0.0",
+  "description": "Modding Tools for Rising Constellations",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "debundle": "^0.5.4"
+  }
+}

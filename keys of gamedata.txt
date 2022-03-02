@@ -1,0 +1,1 @@
+bonus_pipeline_in,bonus_pipeline_out,building,calendar,character,character-rank,constant,culture,doctrine,faction,patent,population_class,population_status,ship,speed,stellar_body,stellar_system,receivedAt

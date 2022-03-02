@@ -1,0 +1,1 @@
+auth,connected,isDead,activeChannels,view,activeOverlay,mapOverlay,isMapLocked,hasSystemTransition,production,assignment,selectedSystem,selectedCharacter,openedCharacter,openedPlayer,onlinePlayers,unreadMessages,charactersGroup,tutorialStep,mapPosition,mapOptions,data,time,galaxy,victory,character_market,faction,player,textNotifications,boxNotifications,systems
