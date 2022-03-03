@@ -5,3 +5,5 @@ Interesting Lines in 19.js
 // Line 1879
 
 // Line 1952 - on all clicks? Or at least when I click on the galaxy screen
+
+Bt = function() { // Sets up event listeners

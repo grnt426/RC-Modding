@@ -7,6 +7,35 @@ Currently, I have found promising data and a useful injection point inside of a 
 
 To find where the bulk of the game's logic is, I recommend looking inside `SteamLibrary\steamapps\common\Rising Constellation\dist\main`. 19.js is the file with much of the game logic.
 
+The most important global we care about is `y.a.state.game`. This seems to contain nearly everything about the game state, and is updated regularly.
+
+Note, the game does not seem to send data for things the current player can't see, which is a good thing. That also means any data files you get from others will inevitably be from that user's perspective and what that user can see.
+
+With this, I have exported data, which the following sections break down.
+
+## Exported Data
+It is recommended to blank out the auth object after exporting y.a.state.game. I don't know if that can be used to auth as another user, but better safe than sorry.
+
+`y.a.state.game` and `state.game` will be treated synonymously in this document. In code it will always appear as its full form.
+
+Exporting the entire `state.game` object is massive. Even for a small 1v1 tactics game the total data exported was 1.7MB of JSON compacted, and 3.5MB of JSON after run through a beuatify tool like https://codebeautify.org/jsonviewer
+
+### 1v1 Tactics Game Data
+`alldata formatted tactics game 1v1.json` is all of the data from `state.game` as a JSON blob. The exported game is from a tactics game with myself (player Granite) and another player (Slaught). This snapshot was taken near the start before much was built and before any systems were taken.
+
+Interesting findings:
+* state.game.galaxy - Describes positions of black holes, systems, and edges between systems. Appears to also contain some ownership information. By size, this is 90% of the file size.
+* state.game.player - All the data of the current player. Tech, policies, characters, owned systems, their overview
+
+
+# Re-Used Terms
+I have noticed that some things in code are named differently from what they are in game. Here is a mapping of what I think they go to.
+
+* Speaker = Siderian
+* Spy = Erased
+* Admiral = Navarch
+
+# Getting Data Out
 As of 3/1/2022 game version, line 1952 `key: "onClick",` is called whenever you click somewhere on the galaxy screen. I use this along with some test code to export data as a file. See an example below
 
 ```
@@ -47,30 +76,14 @@ if(ifthingy === 0 && y.mystuff.download !== 1) {
 }
 ```
 
-The most important global we care about is `y.a.state.game`. This seems to contain nearly everything about the game state, and is updated regularly.
+I have also used this easier method of exporting data to success, and is preferred (no user interaction).
 
-Note, the game does not seem to send data for things the current player can't see, which is a good thing. That also means any data files you get from others will inevitably be from that user's perspective and what that user can see.
+```
+let url = "http://localhost:8080";
+let xhr = new XMLHttpRequest();
+xhr.open("POST", url);
+xhr.setRequestHeader("Content-Type", "application/json");
+xhr.send("#3 update: " + JSON.stringify(some_json_thing));
+```
 
-With this, I have exported data, which the following sections break down.
-
-## Exported Data
-It is recommended to blank out the auth object after exporting y.a.state.game. I don't know if that can be used to auth as another user, but better safe than sorry.
-
-`y.a.state.game` and `state.game` will be treated synonymously in this document. In code it will always appear as its full form.
-
-Exporting the entire `state.game` object is massive. Even for a small 1v1 tactics game the total data exported was 1.7MB of JSON compacted, and 3.5MB of JSON after run through a beuatify tool like https://codebeautify.org/jsonviewer
-
-### 1v1 Tactics Game Data
-`alldata formatted tactics game 1v1.json` is all of the data from `state.game` as a JSON blob. The exported game is from a tactics game with myself (player Granite) and another player (Slaught). This snapshot was taken near the start before much was built and before any systems were taken.
-
-Interesting findings:
-* state.game.galaxy - Describes positions of black holes, systems, and edges between systems. Appears to also contain some ownership information. By size, this is 90% of the file size.
-* state.game.player - All the data of the current player. Tech, policies, characters, owned systems, their overview
-
-
-# Re-Used Terms
-I have noticed that some things in code are named differently from what they are in game. Here is a mapping of what I think they go to.
-
-* Speaker = Siderian
-* Spy = Erased
-* Admiral = Navarch
+It can be combined with the `receiver.js` to print to console all data received
