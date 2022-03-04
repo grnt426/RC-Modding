@@ -21,9 +21,7 @@ await doc.loadInfo(); // loads document properties and worksheets
 console.log(doc.title);
 const sheet = doc.sheetsByIndex[0];
 await sheet.loadCells()
-let cell = sheet.getCell(0, 0)
-cell.value = "Hello, world!"
-await sheet.saveUpdatedCells()
+sheet.getCell(0, 0)
 
 const requestListener = function (req, res) {
 
@@ -35,6 +33,21 @@ const requestListener = function (req, res) {
         console.log('Body: ' + body)
         res.writeHead(200, {'Content-Type': 'text/html'})
         res.end('post received')
+
+        try {
+            let payload = JSON.parse(body);
+            if(payload.type === "selectsystem") {
+                payload = payload.data;
+                let name = sheet.getCell(0, 0)
+                name.value = payload.name;
+                let pop = sheet.getCell(0, 1)
+                pop.value = payload.workforce;
+                sheet.saveUpdatedCells();
+            }
+        }
+        catch (err) {
+
+        }
     });
     console.log("Received something!")
 }

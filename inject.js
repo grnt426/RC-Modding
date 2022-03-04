@@ -12,33 +12,33 @@
  */
 
 if(y.a.state.granite) {
-    let xhr = new XMLHttpRequest();
-    xhr.open("POST", y.a.state.granite.url);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.send("Data found! Not initializing again");
+    // do whatever
 }
 else {
     y.a.state.granite = {url:"http://localhost:8080", "hello":"world"};
+    y.a.state.granite.postData = function(data, type) {
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", y.a.state.granite.url);
+        xhr.timeout = 2000;
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(JSON.stringify({"type":type, "data":data}));
+    }
 
-    let xhr = new XMLHttpRequest();
-    xhr.open("POST", y.a.state.granite.url);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.send("Data not found! Adding some...");
-
+    y.a.state.granite.postData("Ping!", "debug");
 
     y.a.state.granite.updater = setInterval(
         function() {
             if(y.a.state.game.player !== undefined && y.a.state.game.player !== null && y.a.state.game.player.account_id != null) {
-                let xhr = new XMLHttpRequest();
-                xhr.open("POST", y.a.state.granite.url);
-                xhr.setRequestHeader("Content-Type", "application/json");
-                xhr.send("Player data loaded: " + JSON.stringify(y.a.state.game.player));
+
+                if(y.a.state.game.selectedSystem != null) {
+                    y.a.state.granite.postData(y.a.state.game.selectedSystem, "selectsystem");
+                }
+                else {
+                    y.a.state.granite.postData("Nothing to do...", "debug");
+                }
             }
             else {
-                let xhr = new XMLHttpRequest();
-                xhr.open("POST", y.a.state.granite.url);
-                xhr.setRequestHeader("Content-Type", "application/json");
-                xhr.send("Game not running, ignoring...");
+                y.a.state.granite.postData("Ignoring...", "debug");
             }
         },
         5000
