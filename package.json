@@ -2,14 +2,15 @@
   "name": "RCMods",
   "version": "1.0.0",
   "description": "Modding Tools for Rising Constellations",
-  "main": "index.js",
+  "main": "receiver.mjs",
   "scripts": {
     "test": "test"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.26.0",
     "debundle": "^0.5.4",
-    "axios": "^0.26.0"
+    "google-spreadsheet": "^3.2.0"
   }
 }
