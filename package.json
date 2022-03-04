@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "debundle": "^0.5.4"
+    "debundle": "^0.5.4",
+    "axios": "^0.26.0"
   }
 }
