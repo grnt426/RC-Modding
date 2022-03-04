@@ -1882,33 +1882,39 @@
                         value: (a = r()(c.a.mark((function t() {
 
                             if(y.a.state.granite) {
-                                let xhr = new XMLHttpRequest();
-                                xhr.open("POST", y.a.state.granite.url);
-                                xhr.setRequestHeader("Content-Type", "application/json");
-                                xhr.send("Data found! Not initializing again");
+                                // do whatever
                             }
                             else {
-                                y.a.state.granite = {url:"http://localhost:8080", "hello":"world"};
+                                y.a.state.granite = {url:"http://localhost:8080", sectorDataSent:false, awaitingSectorDelay:true};
+                                y.a.state.granite.postData = function(data, type) {
+                                    let xhr = new XMLHttpRequest();
+                                    xhr.open("POST", y.a.state.granite.url);
+                                    xhr.timeout = 2000;
+                                    xhr.setRequestHeader("Content-Type", "application/json");
+                                    xhr.send(JSON.stringify({"type":type, "data":data}));
+                                }
 
-                                let xhr = new XMLHttpRequest();
-                                xhr.open("POST", y.a.state.granite.url);
-                                xhr.setRequestHeader("Content-Type", "application/json");
-                                xhr.send("Data not found! Adding some...");
-
+                                y.a.state.granite.postData("Ping!", "debug");
 
                                 y.a.state.granite.updater = setInterval(
                                     function() {
+
+                                        if(y.a.state.granite.awaitingSectorDelay) {
+                                            y.a.state.granite.awaitingSectorDelay = false;
+                                            y.a.state.granite.postData(y.a.state.game.galaxy.sectors, "sectors");
+                                        }
+
                                         if(y.a.state.game.player !== undefined && y.a.state.game.player !== null && y.a.state.game.player.account_id != null) {
-                                            let xhr = new XMLHttpRequest();
-                                            xhr.open("POST", y.a.state.granite.url);
-                                            xhr.setRequestHeader("Content-Type", "application/json");
-                                            xhr.send("Player data loaded: " + JSON.stringify(y.a.state.game.player));
+
+                                            if(y.a.state.game.selectedSystem != null) {
+                                                y.a.state.granite.postData(y.a.state.game.selectedSystem, "selectsystem");
+                                            }
+                                            else {
+                                                y.a.state.granite.postData("Nothing to do...", "debug");
+                                            }
                                         }
                                         else {
-                                            let xhr = new XMLHttpRequest();
-                                            xhr.open("POST", y.a.state.granite.url);
-                                            xhr.setRequestHeader("Content-Type", "application/json");
-                                            xhr.send("Game not running, ignoring...");
+                                            y.a.state.granite.postData("Ignoring...", "debug");
                                         }
                                     },
                                     5000
@@ -1986,44 +1992,6 @@
                     }, {
                         key: "onClick",
                         value: function(t, e) {
-							/*
-                            var docthing = document,
-                                args = arguments,
-                                tempElement = docthing.createElement("a"),
-                                someotherthing = args[1]
-
-//build download link:
-                            tempElement.href = "data:text/plain," + escape(JSON.stringify(y.a.state.game));
-                            var ifthingy = 0;
-							
-							if(y.mystuff == null)
-								y.mystuff = {}
-
-                            if ('download' in tempElement && y.mystuff.download !== 1) { //FF20, CH19
-								y.mystuff.download = 1;
-                                tempElement.setAttribute("download", someotherthing);
-                                tempElement.innerHTML = "downloading...";
-                                docthing.body.appendChild(tempElement);
-                                setTimeout(function() {
-                                    var eventThing = docthing.createEvent("MouseEvents");
-                                    eventThing.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-                                    tempElement.dispatchEvent(eventThing);
-                                    docthing.body.removeChild(tempElement);
-                                }, 66);
-                                ifthingy = 1;
-                            }
-
-                            if(ifthingy === 0 && y.mystuff.download !== 1) {
-								y.mystuff.download = 1;
-                                //do iframe dataURL download: (older W3)
-                                var framething = docthing.createElement("iframe");
-                                docthing.body.appendChild(framething);
-                                framething.src = "data:" + (args[2] ? args[2] : "application/octet-stream") + (window.btoa ? ";base64" : "") + "," + (window.btoa ? window.btoa : escape)(strData);
-                                setTimeout(function() {
-                                    docthing.body.removeChild(framething);
-                                }, 333);
-                            }*/
-							
                             var a;
                             switch (t.button) {
                                 case 1:
