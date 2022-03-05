@@ -1885,39 +1885,60 @@
                                 // do whatever
                             }
                             else {
-                                y.a.state.granite = {url:"http://localhost:8080", sectorDataSent:false, awaitingSectorDelay:true};
+                                y.a.state.granite = {url:"http://localhost:8080", awaitingSectorDelay:true, knownSystems:[], keepAlive:0, lastSentSys:""};
                                 y.a.state.granite.postData = function(data, type) {
                                     let xhr = new XMLHttpRequest();
-                                    xhr.open("POST", y.a.state.granite.url);
+                                    xhr.open("POST", y.a.state.granite.url + "/update");
                                     xhr.timeout = 2000;
                                     xhr.setRequestHeader("Content-Type", "application/json");
                                     xhr.send(JSON.stringify({"type":type, "data":data}));
                                 }
 
-                                y.a.state.granite.postData("Ping!", "debug");
+                                /*
+                                y.a.state.granite.getData = function(func) {
+                                    let xhr = new XMLHttpRequest();
+                                    xhr.open("GET", y.a.state.granite.url + "/init");
+                                    xhr.onreadystatechange = function() {
+                                        if (xhr.readyState == XMLHttpRequest.DONE) {
+                                            //func(xhr.responseText);
+                                        }
+                                    }
+                                    xhr.timeout = 2000;
+                                    xhr.send();
+                                }*/
+
+                                y.a.state.granite.postData("Online!", "debug");
+                                //y.a.state.granite.getData(function(resp){y.a.state.granite.postData(res, "debug");});
 
                                 y.a.state.granite.updater = setInterval(
                                     function() {
 
                                         if(y.a.state.granite.awaitingSectorDelay) {
-                                            y.a.state.granite.awaitingSectorDelay = false;
-                                            y.a.state.granite.postData(y.a.state.game.galaxy.sectors, "sectors");
+                                            if(y.a.state.game.galaxy.sectors) {
+                                                y.a.state.granite.awaitingSectorDelay = false;
+                                                y.a.state.granite.postData(y.a.state.game.galaxy.sectors, "sectors");
+                                            }
                                         }
 
                                         if(y.a.state.game.player !== undefined && y.a.state.game.player !== null && y.a.state.game.player.account_id != null) {
-
                                             if(y.a.state.game.selectedSystem != null) {
-                                                y.a.state.granite.postData(y.a.state.game.selectedSystem, "selectsystem");
+                                                let sys = y.a.state.game.selectedSystem;
+                                                if(y.a.state.granite.lastSentSys !== sys.name) {
+                                                    y.a.state.granite.postData(sys, "selectsystem");
+                                                    y.a.state.granite.lastSentSys = sys.name;
+                                                }
                                             }
                                             else {
-                                                y.a.state.granite.postData("Nothing to do...", "debug");
+                                                if(y.a.state.granite.keepAlive % 10 === 0)
+                                                    y.a.state.granite.postData("Nothing to do...", "debug");
+                                                y.a.state.granite.keepAlive += 1;
                                             }
                                         }
                                         else {
                                             y.a.state.granite.postData("Ignoring...", "debug");
                                         }
                                     },
-                                    5000
+                                    100
                                 );
                             }
 
