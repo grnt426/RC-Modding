@@ -1,14 +1,17 @@
-import * as http from 'http';
+import express from 'express';
 import GoogleSpreadsheet from 'google-spreadsheet';
 import 'fs';
 import * as fs from "fs";
 
+const app = express();
+
 let creds = ""
 
 try {
+    console.info("Loading credentials for GCP");
     creds = JSON.parse(fs.readFileSync('secrets/uploader.json', 'utf8'));
 } catch (err) {
-    console.error(err)
+    console.error(err);
 }
 
 const doc = new GoogleSpreadsheet.GoogleSpreadsheet('1V8VNAMQ0PzFzqj-giNacsY2GJnCLTHqYZMXutgJOQ0g');
@@ -18,14 +21,33 @@ await doc.useServiceAccountAuth({
 });
 
 await doc.loadInfo(); // loads document properties and worksheets
+console.info("System sheet loaded");
 console.log(doc.title);
 const sheet = doc.sheetsByIndex[0];
+
+// My data
 let sectors = [];
+const knownSystems = new Set();
 
 await sheet.loadHeaderRow(7);
-sheet.getRows();
+let curRows = await sheet.getRows();
+console.info("Rows loaded from Sheet");
 
-const requestListener = function (req, res) {
+Object.values(curRows).forEach(val => {
+    const name = val.Name;
+    if(name && name.length > 0) {
+        console.info(name);
+        knownSystems.add(name.toLowerCase());
+    }
+});
+
+console.log("Marin in known set? " + knownSystems.has("marin"));
+
+app.get('/init', (req, res) => {
+    res.send("Sending startup data");
+});
+
+app.post('/update', (req, res) => {
 
     var body = '';
     req.on('data', function(data) {
@@ -66,10 +88,11 @@ const requestListener = function (req, res) {
         }
     });
     console.log("Received something!")
-}
+});
 
-const server = http.createServer(requestListener);
-server.listen(8080);
+app.listen(8080, () => {
+    console.info("Server started");
+});
 
 function getSystemSlotDetails(data) {
     console.log("Parsing details of: " + data);
