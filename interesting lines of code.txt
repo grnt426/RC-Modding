@@ -10,3 +10,6 @@ Bt = function() { // Sets up event listeners
 
 
 switchSystem: function(t) { -> When you click arrow buttons to rotate through systems
+
+// Can turn on development mode, which seems to show FPS, memory usage, and ping. Not sure what else it does
+ p()(this, t), this.isDev = "development" === "development", this.log = console.log, this.scene = s, this.camera = i, this.camera.updateProjectionMatrix(), this.$root = r, this.$socket = u, this.$toasted = d, this.vm = o, this.data = c, this.renderer = n, this.requestAnimationFrame = null, this.inSystem = null, this.moving = !1, this.hovercaster = new $.Raycaster, this.textureLoader = new $.TextureLoader, this.windowHeight = 100, this.windowWidth = 100, this.onWindowResize(), this.controls = new S.a(this.camera, n.domElement), this.controls.enableKeys = !0, this.controls.keyPanSpeed = 30, this.controls.enableDamping = !0, this.controls.dampingFactor = .2, this.size = y.a.state.game.galaxy.size;

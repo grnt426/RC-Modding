@@ -13,5 +13,8 @@
     "debundle": "^0.5.4",
     "google-spreadsheet": "^3.2.0",
     "express": "^4.17.3"
+  },
+  "devDependencies": {
+    "xhr2": "^0.2.1"
   }
 }

@@ -26,7 +26,7 @@ console.log(doc.title);
 const sheet = doc.sheetsByIndex[0];
 
 // My data
-let sectors = [];
+let sectors = null;
 const knownSystems = new Set();
 
 await sheet.loadHeaderRow(7);
@@ -44,6 +44,7 @@ Object.values(curRows).forEach(val => {
 console.log("Marin in known set? " + knownSystems.has("marin"));
 
 app.get('/init', (req, res) => {
+    console.info("Sending init data");
     res.send("Sending startup data");
 });
 
@@ -54,7 +55,7 @@ app.post('/update', (req, res) => {
         body += data
     });
     req.on('end', function() {
-        console.log('Body: ' + body)
+        // console.log('Finished receiving data');
         res.writeHead(200, {'Content-Type': 'text/html'})
         res.end('post received')
 
@@ -63,6 +64,11 @@ app.post('/update', (req, res) => {
             if(payload.type === "selectsystem") {
                 console.log("Received selected system. Parsing...");
                 let data = payload.data;
+                if(knownSystems.has(data.name)) {
+                    console.info("Already have system '" + data.name + "'; ignoring");
+                    return;
+                }
+
                 let details = getSystemSlotDetails(data.bodies);
                 console.log("Parsed details: " + JSON.stringify(details));
 
@@ -75,19 +81,26 @@ app.post('/update', (req, res) => {
                     details["sterile_planet"].planets, details["sterile_planet"].slots, details["sterile_planet"].prod, details["sterile_planet"].tech, details["sterile_planet"].appeal,
                     details["others"].slots, details["others"].prod, details["others"].tech, details["others"].appeal
                 ]);
-
+                knownSystems.add(data.name)
                 console.log("Successfully saved '" + data.name + "'");
             }
             else if(payload.type === "sectors") {
+                if(sectors) {
+                    console.info("Already have sector data; ignoring");
+                    return;
+                }
                 console.log("Got sector data: " + body);
                 sectors = payload.data;
+            }
+            else {
+                console.log(body);
             }
         }
         catch (err) {
 
         }
     });
-    console.log("Received something!")
+    // console.log("Received something!");
 });
 
 app.listen(8080, () => {
