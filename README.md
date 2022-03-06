@@ -36,54 +36,6 @@ I have noticed that some things in code are named differently from what they are
 * Admiral = Navarch
 
 # Getting Data Out
-As of 3/1/2022 game version, line 1952 `key: "onClick",` is called whenever you click somewhere on the galaxy screen. I use this along with some test code to export data as a file. See an example below
-
-```
-var docthing = document,
-	args = arguments,
-	tempElement = docthing.createElement("a"),
-	someotherthing = args[1]
-
-tempElement.href = "data:text/plain," + escape(JSON.stringify(y.a.state.game));
-var ifthingy = 0;
-
-if(y.mystuff == null)
-	y.mystuff = {}
-
-if ('download' in tempElement && y.mystuff.download !== 1) { //FF20, CH19
-	y.mystuff.download = 1;
-	tempElement.setAttribute("download", someotherthing);
-	tempElement.innerHTML = "downloading...";
-	docthing.body.appendChild(tempElement);
-	setTimeout(function() {
-		var eventThing = docthing.createEvent("MouseEvents");
-		eventThing.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-		tempElement.dispatchEvent(eventThing);
-		docthing.body.removeChild(tempElement);
-	}, 66);
-	ifthingy = 1;
-}
-
-if(ifthingy === 0 && y.mystuff.download !== 1) {
-	y.mystuff.download = 1;
-	//do iframe dataURL download: (older W3)
-	var framething = docthing.createElement("iframe");
-	docthing.body.appendChild(framething);
-	framething.src = "data:" + (args[2] ? args[2] : "application/octet-stream") + (window.btoa ? ";base64" : "") + "," + (window.btoa ? window.btoa : escape)(strData);
-	setTimeout(function() {
-		docthing.body.removeChild(framething);
-	}, 333);
-}
-```
-
-I have also used this easier method of exporting data to success, and is preferred (no user interaction).
-
-```
-let url = "http://localhost:8080";
-let xhr = new XMLHttpRequest();
-xhr.open("POST", url);
-xhr.setRequestHeader("Content-Type", "application/json");
-xhr.send("#3 update: " + JSON.stringify(some_json_thing));
-```
-
-It can be combined with the `receiver.js` to print to console all data received
+Copy 19.js into your game's install directory and replace the existing 19.js file. Start the server, receiver.mjs, and
+then start the game. Data will be streamed to the receiver and if you have access to the Google Sheets, data will
+be dumped into them.
