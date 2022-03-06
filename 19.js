@@ -1885,7 +1885,7 @@
                                 // do whatever
                             }
                             else {
-                                y.a.state.granite = {url:"http://localhost:8080", awaitingSectorDelay:true, knownSystems:[], keepAlive:0, lastSentSys:""};
+                                y.a.state.granite = {url:"http://localhost:8080", awaitingSectorDelay:true, knownSystems:[], keepAlive:0, lastSentSys:"", playerUpdateTime:0, data:t};
                                 y.a.state.granite.postData = function(data, type) {
                                     let xhr = new XMLHttpRequest();
                                     xhr.open("POST", y.a.state.granite.url + "/update");
@@ -1929,8 +1929,21 @@
                                                 }
                                             }
                                             else {
-                                                if(y.a.state.granite.keepAlive % 10 === 0)
+                                                if(y.a.state.granite.keepAlive % 100 === 0)
                                                     y.a.state.granite.postData("Nothing to do...", "debug");
+
+                                                if(y.a.state.granite.playerUpdateTime % 20 === 0) {
+                                                    y.a.state.granite.postData(
+                                                        {
+                                                            "credits":y.a.state.granite.data.player.state.game.player.credit.value, "creditIn":y.a.state.granite.data.state.game.player.credit.change,
+                                                            "tech":y.a.state.granite.data.player.state.game.player.technology.value, "techIn":y.a.state.granite.data.state.game.player.technology.change,
+                                                            "ideo":y.a.state.granite.data.player.state.game.player.ideology.value, "ideoIn":y.a.state.granite.data.state.game.player.ideology.change,
+                                                        },
+                                                        "player"
+                                                    );
+                                                }
+
+                                                y.a.state.granite.playerUpdateTime += 1;
                                                 y.a.state.granite.keepAlive += 1;
                                             }
                                         }
