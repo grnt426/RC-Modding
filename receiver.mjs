@@ -45,7 +45,7 @@ Object.values(curRows).forEach(val => {
 
 console.debug("Marin in known set? " + knownSystems.has("marin"));
 
-let galaxy = JSON.parse(fs.readFileSync('alldata formatted tactics game 1v1.json', 'utf8')).galaxy;
+let galaxy = JSON.parse(fs.readFileSync('test_data/legacy_galaxy.json', 'utf8'));
 
 app.get('/galaxy', cors(), (req, res) => {
     console.info("Sending init data");
@@ -106,6 +106,15 @@ app.post('/update', (req, res) => {
                 personalSheet.getCellByA1("C3").value = data.techIn;
                 personalSheet.getCellByA1("D3").value = data.ideoIn;
                 personalSheet.saveUpdatedCells();
+            }
+            else if(payload.type === "galaxy") {
+                fs.writeFile('test_data/legacy_galaxy_second.json', JSON.stringify(payload.data), err => {
+                    if (err) {
+                        console.error(err)
+                        return
+                    }
+                    //file written successfully
+                });
             }
             else {
                 console.debug(body);
