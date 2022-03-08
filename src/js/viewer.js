@@ -5,9 +5,12 @@ let canvas;
 let context;
 let update = false;
 
+// translating
+let translation = {x:0, y:0};
+
 // zooming
 let zoom;
-let zoomLevel = 3;
+let zoomLevel = 1;
 
 // translating
 let dragging = false;
@@ -39,15 +42,18 @@ function processData() {
 
                 canvas.addEventListener('mouseup', function(event) {
                     dragging = false;
-
                 });
 
                 canvas.addEventListener('mousemove', function(event) {
                     dragEnd = {x:event.pageX, y:event.pageY};
                     if(dragging) {
-                        context.translate(dragStart.x - dragEnd.x, dragStart.y - dragEnd.y);
+                        let deltaX = dragStart.x - dragEnd.x;
+                        let deltaY = dragStart.y - dragEnd.y;
+                        // translation.x += Math.abs(deltaX) > 1 ? deltaX < 0 ? -3 : 2 : 0;
+                        // translation.y += Math.abs(deltaY) > 1 ? deltaY < 0 ? -3 : 2 : 0;
+                        translation.x += deltaX * 1.2;
+                        translation.y += deltaY * 1.2;
                         dragStart = dragEnd;
-                        clear();
                         update = true;
                     }
                 });
@@ -61,30 +67,29 @@ function processData() {
 }
 
 function clear() {
-    context.restore();
     context.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-setInterval(renderer, 100);
+setInterval(renderer, 10);
 
 function renderer() {
 
     if(zoom) {
         zoomLevel += (-1 * zoom * 0.005);
-        if(zoomLevel < 3)
-            zoomLevel = 3;
+        if(zoomLevel < 1)
+            zoomLevel = 1;
 
         zoom = false;
         update = true;
-        clear();
     }
 
     if(update) {
+        clear();
         update = false;
         Object.values(galaxy.stellar_systems).forEach(val => {
             let pos = val.position;
-            let x = pos.x*zoomLevel;
-            let y = (500 - pos.y*zoomLevel) + 500;
+            let x = pos.x * zoomLevel - translation.x - (175 * (zoomLevel - 1));
+            let y = (500 - (pos.y * zoomLevel)) - translation.y + (160 * (zoomLevel - 1));
             if(x < canvas.width && x > 0 && y < canvas.height && y > 0) {
                 context.beginPath();
                 context.arc(x, y, 2, 0, 2 * Math.PI);
@@ -102,5 +107,10 @@ function renderer() {
                 context.fill();
             }
         });
+
+        context.fillStyle = 'rgb(255,214,0)';
+        context.beginPath();
+        context.arc(canvas.width / 2, canvas.height / 2, 2, 0, 2 * Math.PI);
+        context.fill();
     }
 }
