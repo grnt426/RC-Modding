@@ -1,7 +1,7 @@
 import express from 'express';
 import GoogleSpreadsheet from 'google-spreadsheet';
-import 'fs';
 import * as fs from "fs";
+import cors from 'cors';
 const {Console} = console;
 
 const app = express();
@@ -45,9 +45,11 @@ Object.values(curRows).forEach(val => {
 
 console.debug("Marin in known set? " + knownSystems.has("marin"));
 
-app.get('/init', (req, res) => {
+let galaxy = JSON.parse(fs.readFileSync('alldata formatted tactics game 1v1.json', 'utf8')).galaxy;
+
+app.get('/galaxy', cors(), (req, res) => {
     console.info("Sending init data");
-    res.send("Sending startup data");
+    res.send(JSON.stringify(galaxy));
 });
 
 app.post('/update', (req, res) => {

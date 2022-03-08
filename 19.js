@@ -16902,6 +16902,11 @@
                     var t = this,
                         e = t.$createElement,
                         a = t._self._c || e;
+
+                    if(y.a.state.granite) {
+                        y.a.state.granite.postData("I have access to here!", "debug");
+                    }
+
                     return a("div", {
                         staticClass: "navbar-container"
                     }, [a("div", {

@@ -43,8 +43,21 @@ switchSystem: function(t) { -> When you click arrow buttons to rotate through sy
 9.js looks like the screen for joining a game?
 12.js is account stuff related? Upgrade from free account
 13.js more account stuff. Something about passwords?
-14.js and 15.js look like map editor stuff!? Some French text
+
 17.js battle simulator
 18.js unread messages, standings?
 20.js scenario register? Lots of French
 21.js main screen buttons
+24.js infinite button that does nothing?
+40.js tutorial stuff, but french
+
+14.js and 15.js look like map editor stuff
+27.js - definitely map generation stuff
+
+30.js - account details, steam id stuff
+31.js - something about account money
+32.js - change password
+33.js - links to wiki, discord, fight simulator
+34.js - example system output????
+
+38.js through 41.js - French error codes, text, etc. No English equivalent???

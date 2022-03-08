@@ -15,6 +15,7 @@
     "express": "^4.17.3"
   },
   "devDependencies": {
-    "xhr2": "^0.2.1"
+    "xhr2": "^0.2.1",
+    "cors": "^2.8.5"
   }
 }
