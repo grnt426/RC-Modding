@@ -11,6 +11,15 @@ let creds;
 let systemDocId;
 let personalDoc;
 
+const galaxyHistory = {};
+
+try {
+    await loadGalaxyHistory();
+}
+catch(err){
+    console.info(err);
+}
+
 try {
     console.info("Loading credentials for GCP");
     creds = JSON.parse(fs.readFileSync('secrets/uploader.json', 'utf8'));
@@ -22,6 +31,7 @@ try {
     personalDoc = config.personal;
 } catch (err) {
     console.error(err);
+    process.exit(1);
 }
 
 const systemSheet = (await loadGoogleSheet(systemDocId)).sheetsByIndex[0];
@@ -39,16 +49,17 @@ console.info("Data loaded from sheets");
 Object.values(curRows).forEach(val => {
     const name = val.Name;
     if(name && name.length > 0) {
-        console.debug(name);
+        // console.debug(name);
         knownSystems.add(name.toLowerCase());
     }
 });
 
-let galaxy = JSON.parse(fs.readFileSync('test_data/legacy_galaxy.json', 'utf8'));
+// let galaxy = JSON.parse(fs.readFileSync('legacy7_snapshots/state_2022-03-09T10.json', 'utf8'));
 
 app.get('/galaxy', cors(), (req, res) => {
     console.info("Sending init data");
-    res.send(JSON.stringify(galaxy));
+
+    res.send(JSON.stringify(galaxyHistory));
 });
 
 app.post('/update', (req, res) => {
@@ -93,7 +104,7 @@ app.post('/update', (req, res) => {
                     console.debug("Already have sector data; ignoring");
                     return;
                 }
-                console.debug("Got sector data: " + body);
+                console.debug("Got sector data");
                 sectors = payload.data;
             }
             else if(payload.type === "player") {
@@ -119,11 +130,24 @@ app.post('/update', (req, res) => {
             }
             else if(payload.type === "galaxy_snapshot") {
                 console.info("Received galaxy snapshot");
-                // console.info("Payload: " + JSON.stringify(payload.data));
+                let snap = payload.data;
+                Object.values(snap.sectors).forEach( s => {
+                    delete s.adjacent;
+                    delete s.centroid;
+                    delete s.points;
+                });
+                Object.values(snap.stellar_systems).forEach( s => {
+                    delete s.class;
+                    delete s.name;
+                    delete s.position;
+                    delete s.score;
+                    delete s.type;
+
+                });
                 let d = DateTime.now();
                 let filename = 'legacy7_snapshots/state_' + d.toISODate() + 'T' + d.hour + '.json';
                 console.info("Writing to file: " + filename);
-                fs.writeFile(filename, JSON.stringify(payload.data), err => {
+                fs.writeFile(filename, JSON.stringify(snap), err => {
                     if (err) {
                         console.error(err)
                         return
@@ -172,6 +196,64 @@ function getSystemSlotDetails(data) {
     });
 
     return res;
+}
+
+async function loadGalaxyHistory() {
+
+    // we need the base data loaded first before
+    const data = fs.readFileSync("legacy7_snapshots/base_data.json", 'utf8');
+    const base = JSON.parse(data);
+    galaxyHistory.start = base.start;
+    console.info("Galaxy starts at " + galaxyHistory.start);
+    galaxyHistory.base = base.galaxy;
+    console.info("Galaxy starts at " + galaxyHistory.base);
+    galaxyHistory.snapshots = [];
+
+    let prevState = {};
+    Object.assign(prevState, base.galaxy);
+
+    const files = fs.readdirSync("legacy7_snapshots/");
+    files.sort();
+
+    files.forEach(function(file) {
+        console.info("File: " + file);
+        if(/state_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2}\.json(?!.)/.test(file)) {
+            console.info("\tMatched, processing...");
+            const fdata = fs.readFileSync("legacy7_snapshots/"+file, 'utf8');
+            try {
+                let time = file.match(/([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2})/)[0];
+                let state = JSON.parse(fdata);
+
+                state.sectors = state.sectors.filter((val, i, state) => {
+                    let p = prevState.sectors[i];
+                    if(val.owner !== p.owner) {
+                        prevState.sectors[i] = val;
+                        return true;
+                    }
+                    return false;
+                });
+
+                state.stellar_systems = state.stellar_systems.filter((val, i, state) => {
+                    let p = prevState.stellar_systems[i];
+                    if(val.owner !== p.owner) {
+                        prevState.stellar_systems[i] = val;
+                        return true;
+                    }
+                    return false;
+                });
+                console.info("Retained data: " + JSON.stringify(state));
+
+                let snap = {time: time, data: state};
+                galaxyHistory.snapshots.push(snap);
+                console.info("\tProcessed successfully");
+            }
+            catch(err) {
+                console.info("\tFailed: " + err);
+            }
+        }
+    });
+
+    console.info("All done!");
 }
 
 async function loadGoogleSheet(id) {

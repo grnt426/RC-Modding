@@ -2,6 +2,7 @@ $( document ).ready( processData );
 
 const galCenter = {x:0, y:0};
 
+let galaxyHistory;
 let galaxy;
 let canvas;
 let context;
@@ -24,7 +25,9 @@ function processData() {
         $.ajax({
             url: "http://localhost:8080/galaxy",
             success: function( result ) {
-                galaxy = JSON.parse(result);
+                galaxyHistory = JSON.parse(result);
+
+                galaxy = galaxyHistory.base;
 
                 galCenter.x = galaxy.sectors[0].centroid[0];
                 galCenter.y = galaxy.sectors[0].centroid[1];
