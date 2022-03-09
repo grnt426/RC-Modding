@@ -3,6 +3,7 @@ import GoogleSpreadsheet from 'google-spreadsheet';
 import * as fs from "fs";
 import cors from 'cors';
 const {Console} = console;
+import {DateTime} from "luxon";
 
 const app = express();
 
@@ -117,7 +118,18 @@ app.post('/update', (req, res) => {
                 });
             }
             else if(payload.type === "galaxy_snapshot") {
-
+                console.info("Received galaxy snapshot");
+                // console.info("Payload: " + JSON.stringify(payload.data));
+                let d = DateTime.now();
+                let filename = 'legacy7_snapshots/state_' + d.toISODate() + 'T' + d.hour + '.json';
+                console.info("Writing to file: " + filename);
+                fs.writeFile(filename, JSON.stringify(payload.data), err => {
+                    if (err) {
+                        console.error(err)
+                        return
+                    }
+                    //file written successfully
+                });
             }
             else {
                 console.debug(body);

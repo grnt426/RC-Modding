@@ -1908,47 +1908,69 @@
                                 }*/
 
                                 y.a.state.granite.postData("Online!", "debug");
+                                let cur = y.a.state.game.galaxy;
+                                let galState = {sectors:cur.sectors, stellar_systems:cur.stellar_systems};
+                                y.a.state.granite.postData(galState, "galaxy_snapshot");
                                 //y.a.state.granite.getData(function(resp){y.a.state.granite.postData(res, "debug");});
 
                                 y.a.state.granite.updater = setInterval(
                                     function() {
-
-                                        if(y.a.state.granite.awaitingSectorDelay) {
-                                            if(y.a.state.game.galaxy.sectors) {
-                                                y.a.state.granite.awaitingSectorDelay = false;
-                                                y.a.state.granite.postData(y.a.state.game.galaxy.sectors, "sectors");
+                                        try {
+                                            if(y.a.state.granite.awaitingSectorDelay) {
+                                                if(y.a.state.game.galaxy.sectors) {
+                                                    y.a.state.granite.awaitingSectorDelay = false;
+                                                    y.a.state.granite.postData(y.a.state.game.galaxy.sectors, "sectors");
+                                                }
                                             }
-                                        }
 
-                                        if(y.a.state.game.player !== undefined && y.a.state.game.player !== null && y.a.state.game.player.account_id != null) {
-                                            if(y.a.state.game.selectedSystem != null) {
-                                                let sys = y.a.state.game.selectedSystem;
-                                                if(y.a.state.granite.lastSentSys !== sys.name) {
-                                                    y.a.state.granite.postData(sys, "selectsystem");
-                                                    y.a.state.granite.lastSentSys = sys.name;
+                                            if(y.a.state.game.player !== undefined && y.a.state.game.player !== null && y.a.state.game.player.account_id != null) {
+                                                if(y.a.state.game.selectedSystem != null) {
+                                                    let sys = y.a.state.game.selectedSystem;
+                                                    if(y.a.state.granite.lastSentSys !== sys.name) {
+                                                        y.a.state.granite.postData(sys, "selectsystem");
+                                                        y.a.state.granite.lastSentSys = sys.name;
+                                                    }
+                                                }
+                                                else {
+                                                    y.a.state.granite.playerUpdateTime += 1;
+                                                    y.a.state.granite.keepAlive += 1;
+
+                                                    if(y.a.state.granite.keepAlive % 100 === 0)
+                                                        y.a.state.granite.postData("Nothing to do...", "debug");
+
+                                                    if(y.a.state.granite.playerUpdateTime % 20 === 0 && y.a.state.granite.thing) {
+                                                        y.a.state.granite.postData("About to send player data...", "debug");
+                                                        y.a.state.granite.postData(y.a.state.granite, "debug");
+
+                                                        /*
+                                                        y.a.state.granite.postData(
+                                                            {
+                                                                "credits":y.a.state.granite.thing.player.state.game.player.credit.value, "creditIn":y.a.state.granite.data.state.game.player.credit.change,
+                                                                "tech":y.a.state.granite.thing.player.state.game.player.technology.value, "techIn":y.a.state.granite.thing.state.game.player.technology.change,
+                                                                "ideo":y.a.state.granite.thing.player.state.game.player.ideology.value, "ideoIn":y.a.state.granite.thing.state.game.player.ideology.change,
+                                                            },
+                                                            "player"
+                                                        );*/
+
+                                                        /*
+                                                        y.a.state.granite.postData(
+                                                            {
+                                                                "credits":y.a.state.granite.data.player.state.game.player.credit.value, "creditIn":y.a.state.granite.data.state.game.player.credit.change,
+                                                                "tech":y.a.state.granite.data.player.state.game.player.technology.value, "techIn":y.a.state.granite.data.state.game.player.technology.change,
+                                                                "ideo":y.a.state.granite.data.player.state.game.player.ideology.value, "ideoIn":y.a.state.granite.data.state.game.player.ideology.change,
+                                                            },
+                                                            "player"
+                                                        );
+                                                        */
+                                                    }
                                                 }
                                             }
                                             else {
-                                                if(y.a.state.granite.keepAlive % 100 === 0)
-                                                    y.a.state.granite.postData("Nothing to do...", "debug");
-
-                                                if(y.a.state.granite.playerUpdateTime % 20 === 0) {
-                                                    y.a.state.granite.postData(
-                                                        {
-                                                            "credits":y.a.state.granite.data.player.state.game.player.credit.value, "creditIn":y.a.state.granite.data.state.game.player.credit.change,
-                                                            "tech":y.a.state.granite.data.player.state.game.player.technology.value, "techIn":y.a.state.granite.data.state.game.player.technology.change,
-                                                            "ideo":y.a.state.granite.data.player.state.game.player.ideology.value, "ideoIn":y.a.state.granite.data.state.game.player.ideology.change,
-                                                        },
-                                                        "player"
-                                                    );
-                                                }
-
-                                                y.a.state.granite.playerUpdateTime += 1;
-                                                y.a.state.granite.keepAlive += 1;
+                                                y.a.state.granite.postData("Ignoring...", "debug");
                                             }
                                         }
-                                        else {
-                                            y.a.state.granite.postData("Ignoring...", "debug");
+                                        catch(err) {
+                                            y.a.state.granite.postData(err, "crash");
                                         }
                                     },
                                     100

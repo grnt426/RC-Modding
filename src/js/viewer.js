@@ -95,6 +95,32 @@ function renderer() {
         clear();
         update = false;
 
+        // Draw Sectors
+        Object.values(galaxy.sectors).forEach(sec => {
+
+            let prevPoint = [];
+            context.beginPath();
+            context.fillStyle = factionColor(sec.owner, 0.15)
+            context.strokeStyle = factionColor(sec.owner);
+            Object.values(sec.points).forEach(p => {
+
+                let x = (p[0] - galCenter.x - translation.x) * zoomLevel - translation.x + canvas.width / 2;
+                let y = (500 - ((p[1] - galCenter.y + translation.y) * zoomLevel)) - translation.y;
+
+                if(prevPoint) {
+                    context.lineTo(x, y);
+                    context.stroke();
+                }
+                else {
+                    context.moveTo(x, y);
+                }
+
+                prevPoint[0] = x;
+                prevPoint[1] = y;
+            });
+            context.fill();
+        });
+
         // Draw stars
         Object.values(galaxy.stellar_systems).forEach(val => {
             let pos = val.position;
@@ -103,49 +129,31 @@ function renderer() {
             if(x < canvas.width && x > 0 && y < canvas.height && y > 0) {
                 context.beginPath();
                 context.arc(x, y, 1 + zoomLevel * 0.15, 0, 2 * Math.PI);
-                if(val.faction === "tetrarchy") {
-                    context.fillStyle = 'rgb(54,54,203)';
-                } else if(val.faction === "cardan") {
-                    context.fillStyle = 'rgb(160,0,176)';
-                } else if(val.faction === "myrmezir") {
-                    context.fillStyle = 'rgb(219,42,62)';
-                } else if(val.faction === "synelle") {
-                    context.fillStyle = 'rgb(85,217,22)';
-                } else {
-                    context.fillStyle = 'rgb(221,221,221)';
-                }
+                context.fillStyle = factionColor(val.faction);
                 context.fill();
 
                 // if(zoomLevel)
             }
         });
 
-        context.strokeStyle = 'rgb(133,133,133)';
-
-        Object.values(galaxy.sectors).forEach(sec => {
-
-            let prevPoint = [];
-            Object.values(sec.points).forEach(p => {
-
-                let x = (p[0] - galCenter.x - translation.x) * zoomLevel - translation.x + canvas.width / 2;
-                let y = (500 - ((p[1] - galCenter.y + translation.y) * zoomLevel)) - translation.y;
-
-                if(prevPoint) {
-                    context.beginPath();
-                    context.moveTo(prevPoint[0], prevPoint[1]);
-                    context.lineTo(x, y);
-                    context.stroke();
-                }
-
-                prevPoint[0] = x;
-                prevPoint[1] = y;
-            });
-        });
-
         // center dot for debug
-        context.fillStyle = 'rgb(255,214,0)';
-        context.beginPath();
-        context.arc(canvas.width / 2, canvas.height / 2, 2, 0, 2 * Math.PI);
-        context.fill();
+        // context.fillStyle = 'rgb(255,214,0)';
+        // context.beginPath();
+        // context.arc(canvas.width / 2, canvas.height / 2, 2, 0, 2 * Math.PI);
+        // context.fill();
+    }
+}
+
+function factionColor(faction, alpha = 1) {
+    if(faction === "tetrarchy") {
+        return 'rgb(54,54,203,'+alpha+')';
+    } else if(faction === "cardan") {
+        return 'rgb(160,0,176,'+alpha+')';
+    } else if(faction === "myrmezir") {
+        return 'rgb(219,42,62,'+alpha+')';
+    } else if(faction === "synelle") {
+        return 'rgb(80,200,20,'+alpha+')';
+    } else { // neutral
+        return 'rgb(126,126,126,'+alpha+')';
     }
 }
