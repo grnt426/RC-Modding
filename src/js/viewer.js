@@ -57,8 +57,8 @@ function processData() {
                         let deltaY = dragStart.y - dragEnd.y;
                         // translation.x += Math.abs(deltaX) > 1 ? deltaX < 0 ? -3 : 2 : 0;
                         // translation.y += Math.abs(deltaY) > 1 ? deltaY < 0 ? -3 : 2 : 0;
-                        translation.x += deltaX * 1.2;
-                        translation.y += deltaY * 1.2;
+                        translation.x += deltaX * (zoomLevel > 15 ? 0.1 : 0.4);
+                        translation.y += deltaY * (zoomLevel > 15 ? 0.1 : 0.4);
                         dragStart = dragEnd;
                         update = true;
                     }
@@ -84,6 +84,8 @@ function renderer() {
         zoomLevel += (-1 * zoom * (zoomLevel > 20 ? 0.04 : .005));
         if(zoomLevel < 1)
             zoomLevel = 1;
+        if(zoomLevel > 150)
+            zoomLevel = 150;
 
         zoom = false;
         update = true;
@@ -96,8 +98,8 @@ function renderer() {
         // Draw stars
         Object.values(galaxy.stellar_systems).forEach(val => {
             let pos = val.position;
-            let x = (pos.x - galCenter.x) * zoomLevel - translation.x + canvas.width / 2;
-            let y = (500 - ((pos.y - galCenter.y) * zoomLevel)) - translation.y;
+            let x = (pos.x - galCenter.x - translation.x) * zoomLevel - translation.x + canvas.width / 2;
+            let y = (500 - ((pos.y - galCenter.y + translation.y) * zoomLevel)) - translation.y;
             if(x < canvas.width && x > 0 && y < canvas.height && y > 0) {
                 context.beginPath();
                 context.arc(x, y, 1 + zoomLevel * 0.15, 0, 2 * Math.PI);
@@ -125,8 +127,8 @@ function renderer() {
             let prevPoint = [];
             Object.values(sec.points).forEach(p => {
 
-                let x = (p[0] - galCenter.x) * zoomLevel - translation.x + canvas.width / 2;
-                let y = (500 - ((p[1] - galCenter.y) * zoomLevel)) - translation.y;
+                let x = (p[0] - galCenter.x - translation.x) * zoomLevel - translation.x + canvas.width / 2;
+                let y = (500 - ((p[1] - galCenter.y + translation.y) * zoomLevel)) - translation.y;
 
                 if(prevPoint) {
                     context.beginPath();
@@ -141,9 +143,9 @@ function renderer() {
         });
 
         // center dot for debug
-        // context.fillStyle = 'rgb(255,214,0)';
-        // context.beginPath();
-        // context.arc(canvas.width / 2, canvas.height / 2, 2, 0, 2 * Math.PI);
-        // context.fill();
+        context.fillStyle = 'rgb(255,214,0)';
+        context.beginPath();
+        context.arc(canvas.width / 2, canvas.height / 2, 2, 0, 2 * Math.PI);
+        context.fill();
     }
 }
