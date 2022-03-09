@@ -61,3 +61,8 @@ switchSystem: function(t) { -> When you click arrow buttons to rotate through sy
 34.js - example system output????
 
 38.js through 41.js - French error codes, text, etc. No English equivalent???
+
+main.js - handlesUpdates?
+handleReceive: function(e) {
+                e.new_conversation ? rn.a.commit("portal/newConversation", e.new_conversation) : e.new_message ? rn.a.commit("portal/newMessage", e.new_message) : (Object.keys(e).forEach((function(t) {
+                    e[t].receivedAt = Date.now(), console.log("receive: ".concat(t))

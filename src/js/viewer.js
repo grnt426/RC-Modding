@@ -81,7 +81,7 @@ setInterval(renderer, 10);
 function renderer() {
 
     if(zoom) {
-        zoomLevel += (-1 * zoom * 0.005);
+        zoomLevel += (-1 * zoom * (zoomLevel > 20 ? 0.04 : .005));
         if(zoomLevel < 1)
             zoomLevel = 1;
 
@@ -100,7 +100,7 @@ function renderer() {
             let y = (500 - ((pos.y - galCenter.y) * zoomLevel)) - translation.y;
             if(x < canvas.width && x > 0 && y < canvas.height && y > 0) {
                 context.beginPath();
-                context.arc(x, y, 2, 0, 2 * Math.PI);
+                context.arc(x, y, 1 + zoomLevel * 0.15, 0, 2 * Math.PI);
                 if(val.faction === "tetrarchy") {
                     context.fillStyle = 'rgb(54,54,203)';
                 } else if(val.faction === "cardan") {
@@ -110,9 +110,11 @@ function renderer() {
                 } else if(val.faction === "synelle") {
                     context.fillStyle = 'rgb(85,217,22)';
                 } else {
-                    context.fillStyle = 'rgb(256, 256, 256)';
+                    context.fillStyle = 'rgb(221,221,221)';
                 }
                 context.fill();
+
+                // if(zoomLevel)
             }
         });
 

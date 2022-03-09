@@ -43,8 +43,6 @@ Object.values(curRows).forEach(val => {
     }
 });
 
-console.debug("Marin in known set? " + knownSystems.has("marin"));
-
 let galaxy = JSON.parse(fs.readFileSync('test_data/legacy_galaxy.json', 'utf8'));
 
 app.get('/galaxy', cors(), (req, res) => {
@@ -68,6 +66,7 @@ app.post('/update', (req, res) => {
             if(payload.type === "selectsystem") {
                 console.log("Received selected system. Parsing...");
                 let data = payload.data;
+                console.info(JSON.stringify(data));
                 if(knownSystems.has(data.name)) {
                     console.debug("Already have system '" + data.name + "'; ignoring");
                     return;
@@ -108,13 +107,17 @@ app.post('/update', (req, res) => {
                 personalSheet.saveUpdatedCells();
             }
             else if(payload.type === "galaxy") {
-                fs.writeFile('test_data/legacy_galaxy_second.json', JSON.stringify(payload.data), err => {
+                console.info("Received galaxy");
+                fs.writeFile('test_data/state.json', JSON.stringify(payload.data), err => {
                     if (err) {
                         console.error(err)
                         return
                     }
                     //file written successfully
                 });
+            }
+            else if(payload.type === "galaxy_snapshot") {
+
             }
             else {
                 console.debug(body);
