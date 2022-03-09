@@ -17,6 +17,7 @@
   "devDependencies": {
     "xhr2": "^0.2.1",
     "cors": "^2.8.5",
-    "luxon": "^2.3.1"
+    "luxon": "^2.3.1",
+    "realistic-structured-clone": "^2.0.3"
   }
 }

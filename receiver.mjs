@@ -4,6 +4,7 @@ import * as fs from "fs";
 import cors from 'cors';
 const {Console} = console;
 import {DateTime} from "luxon";
+import structuredClone from 'realistic-structured-clone';
 
 const app = express();
 
@@ -206,11 +207,9 @@ async function loadGalaxyHistory() {
     galaxyHistory.start = base.start;
     console.info("Galaxy starts at " + galaxyHistory.start);
     galaxyHistory.base = base.galaxy;
-    console.info("Galaxy starts at " + galaxyHistory.base);
     galaxyHistory.snapshots = [];
 
-    let prevState = {};
-    Object.assign(prevState, base.galaxy);
+    let prevState = structuredClone(base.galaxy);
 
     const files = fs.readdirSync("legacy7_snapshots/");
     files.sort();
