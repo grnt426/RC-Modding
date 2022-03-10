@@ -226,6 +226,13 @@ function renderer() {
         // context.beginPath();
         // context.arc(canvas.width / 2, canvas.height / 2, 2, 0, 2 * Math.PI);
         // context.fill();
+
+        // this is SUPER lazy
+        let time = galaxyHistory.snapshots[index] === undefined ? galaxyHistory.snapshots[index-1].time : galaxyHistory.snapshots[index].time;
+        let comps = time.split("T");
+        context.font = '30px sans-serif';
+        context.fillStyle = 'rgb(126,126,126)';
+        context.fillText(comps[0] + " " + comps[1] + ":00", canvas.width - 250, canvas.height - 20);
     }
 
     resetAnims = false;
