@@ -1885,7 +1885,9 @@
                                 // do whatever
                             }
                             else {
-                                y.a.state.granite = {url:"http://localhost:8080", awaitingSectorDelay:true, knownSystems:[], keepAlive:0, lastSentSys:"", playerUpdateTime:0, data:t};
+                                y.a.state.granite = {
+                                    url:"http://localhost:8080", awaitingSectorDelay:true, knownSystems:[], keepAlive:0,
+                                    lastSentSys:"", playerUpdateTime:0, data:t, snapshotTime:0};
                                 y.a.state.granite.postData = function(data, type) {
                                     let xhr = new XMLHttpRequest();
                                     xhr.open("POST", y.a.state.granite.url + "/update");
@@ -1911,6 +1913,7 @@
                                 let cur = y.a.state.game.galaxy;
                                 let galState = {sectors:cur.sectors, stellar_systems:cur.stellar_systems};
                                 y.a.state.granite.postData(galState, "galaxy_snapshot");
+                                y.a.state.granite.snapshotTime = Date.now();
                                 //y.a.state.granite.getData(function(resp){y.a.state.granite.postData(res, "debug");});
 
                                 y.a.state.granite.updater = setInterval(
@@ -1924,6 +1927,18 @@
                                             }
 
                                             if(y.a.state.game.player !== undefined && y.a.state.game.player !== null && y.a.state.game.player.account_id != null) {
+
+                                                if(y.a.state.granite.snapshotTime) {
+
+                                                    // 1 hr = 60 mins * 60 seconds * 1000 milliseconds
+                                                    if(Date.now() - y.a.state.granite.snapshotTime > 60 * 60 * 1000) {
+                                                        let c = y.a.state.game.galaxy;
+                                                        let gal = {sectors:c.sectors, stellar_systems:c.stellar_systems};
+                                                        y.a.state.granite.postData(gal, "galaxy_snapshot");
+                                                        y.a.state.granite.snapshotTime = Date.now();
+                                                    }
+                                                }
+
                                                 if(y.a.state.game.selectedSystem != null) {
                                                     let sys = y.a.state.game.selectedSystem;
                                                     if(y.a.state.granite.lastSentSys !== sys.name) {
@@ -16924,10 +16939,6 @@
                     var t = this,
                         e = t.$createElement,
                         a = t._self._c || e;
-
-                    if(y.a.state.granite) {
-                        y.a.state.granite.postData("I have access to here!", "debug");
-                    }
 
                     return a("div", {
                         staticClass: "navbar-container"
