@@ -8,12 +8,17 @@ let canvas;
 let context;
 let update = false;
 
+let systemData = Array(10000).fill(0);
+
+// animation
+let index = 0;
+
 // translating
 let translation = {x:0, y:0};
 
 // zooming
 let zoom;
-let zoomLevel = 2.5;
+let zoomLevel = 3;
 
 // translating
 let dragging = false;
@@ -27,7 +32,13 @@ function processData() {
             success: function( result ) {
                 galaxyHistory = JSON.parse(result);
 
-                galaxy = galaxyHistory.base;
+                galaxy = structuredClone(galaxyHistory.base);
+
+                Object.keys(galaxy.stellar_systems).forEach(ind => {
+                    let sys = galaxy.stellar_systems[ind];
+                    sys.index = ind;
+                    systemData[sys.id] = sys;
+                });
 
                 galCenter.x = galaxy.sectors[0].centroid[0];
                 galCenter.y = galaxy.sectors[0].centroid[1];
@@ -67,6 +78,7 @@ function processData() {
                     }
                 });
 
+                console.info(galaxyHistory);
                 update = true;
             }
         });
@@ -80,6 +92,46 @@ function clear() {
 }
 
 setInterval(renderer, 10);
+setTimeout(animateHistory, 2000);
+
+function animateHistory() {
+    index++;
+    if(index >= galaxyHistory.snapshots.length){
+        index = 0;
+
+        // lazy reset :\
+        console.info("Resetting back to basics");
+        galaxy = structuredClone(galaxyHistory.base);
+        update = true;
+        setTimeout(animateHistory, 2000);
+        return;
+    }
+
+    const snap = galaxyHistory.snapshots[index].data;
+    Object.keys(snap.sectors).forEach(ind => {
+        let sec = snap.sectors[ind];
+        let id = sec.id;
+        console.info(JSON.stringify(sec));
+        console.info("Sector flipped: " + sec.name + " to " + sec.owner);
+        let prev = galaxy.sectors[id];
+
+        galaxy.sectors[id].owner = sec.owner;
+        galaxy.sectors[id].division = sec.division;
+    });
+
+    Object.keys(snap.stellar_systems).forEach(ind => {
+        let sys = snap.stellar_systems[ind];
+        let id = sys.id;
+        let galaxyIndex = systemData[id].index;
+        console.info("System flipped: " + systemData[id].name);
+        galaxy.stellar_systems[galaxyIndex].owner = sys.owner;
+        galaxy.stellar_systems[galaxyIndex].faction = sys.faction;
+        galaxy.stellar_systems[galaxyIndex].status = sys.status;
+    });
+
+    update = true;
+    setTimeout(animateHistory, 2000);
+}
 
 function renderer() {
 
