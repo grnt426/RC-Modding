@@ -100,6 +100,7 @@ setTimeout(animateHistory, 2000);
 
 function animateHistory() {
     if(index >= galaxyHistory.snapshots.length){
+        $("#systemlog").html("");
         index = 0;
 
         // lazy reset :\
@@ -124,18 +125,38 @@ function animateHistory() {
         galaxy.sectors[id].division = sec.division;
     });
 
+    let systemLog = $("#systemlog");
     Object.keys(snap.stellar_systems).forEach(ind => {
         let sys = snap.stellar_systems[ind];
         let id = sys.id;
         let galaxyIndex = systemData[id].index;
 
         takenSystems[id] = {startTime:Date.now(), s:sys, radius:2 + zoomLevel * 0.15, dir:0.1};
+        let prev = galaxy.stellar_systems[galaxyIndex];
+
+        if(!sys.owner) {
+            systemLog.prepend(
+                wrapTextInFaction(prev.owner, prev.faction) + " abandoned " + systemData[id].name + "<br />"
+            );
+        }
+        else if(prev.owner === null)
+            systemLog.prepend(
+                wrapTextInFaction(sys.owner, sys.faction) + " colonized " + systemData[id].name + "<br />"
+            );
+        else
+            systemLog.prepend(
+                wrapTextInFaction(sys.owner, sys.faction) + " took " + systemData[id].name +
+                " from " + wrapTextInFaction(prev.owner, prev.faction) + "<br />"
+            );
 
         // console.info("System flipped: " + systemData[id].name);
-        galaxy.stellar_systems[galaxyIndex].owner = sys.owner;
-        galaxy.stellar_systems[galaxyIndex].faction = sys.faction;
-        galaxy.stellar_systems[galaxyIndex].status = sys.status;
+        prev.owner = sys.owner;
+        prev.faction = sys.faction;
+        prev.status = sys.status;
     });
+
+    let time = getCurrentSnapTime();
+    systemLog.prepend(" ~~~ " + time[0] + " " + time[1] + ":00" + " ~~~ <br />");
 
     update = true;
     index++;
@@ -228,8 +249,7 @@ function renderer() {
         // context.fill();
 
         // this is SUPER lazy
-        let time = galaxyHistory.snapshots[index] === undefined ? galaxyHistory.snapshots[index-1].time : galaxyHistory.snapshots[index].time;
-        let comps = time.split("T");
+        let comps = getCurrentSnapTime();
         context.font = '30px sans-serif';
         context.fillStyle = 'rgb(126,126,126)';
         context.fillText(comps[0] + " " + comps[1] + ":00", canvas.width - 250, canvas.height - 20);
@@ -238,9 +258,26 @@ function renderer() {
     resetAnims = false;
 }
 
+function getCurrentSnapTime() {
+    let time = galaxyHistory.snapshots[index] === undefined ? galaxyHistory.snapshots[index-1].time : galaxyHistory.snapshots[index].time;
+    return time.split("T");
+}
+
+function wrapTextInFaction(text, faction) {
+    style = "";
+    switch(faction) {
+        case "tetrarchy": style = "tet"; break;
+        case "cardan": style = "car"; break;
+        case "myrmezir": style = "myr"; break;
+        case "synelle": style = "syn"; break;
+    }
+
+    return "<span class='" + style + "'>" + text + "</span>";
+}
+
 function factionColor(faction, alpha = 1) {
     if(faction === "tetrarchy") {
-        return 'rgb(54,54,203,'+alpha+')';
+        return 'rgb(63,63,226,'+alpha+')';
     } else if(faction === "cardan") {
         return 'rgb(160,0,176,'+alpha+')';
     } else if(faction === "myrmezir") {

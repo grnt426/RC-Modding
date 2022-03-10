@@ -81,14 +81,13 @@ app.post('/update', (req, res) => {
             if(payload.type === "selectsystem") {
                 console.log("Received selected system. Parsing...");
                 let data = payload.data;
-                console.info(JSON.stringify(data));
                 if(knownSystems.has(data.name)) {
                     console.debug("Already have system '" + data.name + "'; ignoring");
                     return;
                 }
 
                 let details = getSystemSlotDetails(data.bodies);
-                console.debug("Parsed details: " + JSON.stringify(details));
+                console.debug("Parsed details");
 
                 // Get current sheet data
                 systemSheet.getRows();
