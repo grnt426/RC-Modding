@@ -57,6 +57,8 @@ Object.values(curRows).forEach(val => {
 
 // let galaxy = JSON.parse(fs.readFileSync('legacy7_snapshots/state_2022-03-09T10.json', 'utf8'));
 
+app.use(express.static('public/images'));
+
 app.get('/galaxy', cors(), (req, res) => {
     console.info("Sending init data");
 

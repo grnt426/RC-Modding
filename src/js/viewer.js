@@ -18,12 +18,16 @@ let translation = {x:0, y:0};
 
 // zooming
 let zoom;
-let zoomLevel = 3;
+let zoomLevel = 3.75;
 
 // translating
 let dragging = false;
 let dragStart = {};
 let dragEnd = {};
+
+// Animating Taken Systems
+let takenSystems = [];
+let resetAnims = false;
 
 function processData() {
     try {
@@ -95,25 +99,26 @@ setInterval(renderer, 10);
 setTimeout(animateHistory, 2000);
 
 function animateHistory() {
-    index++;
     if(index >= galaxyHistory.snapshots.length){
         index = 0;
 
         // lazy reset :\
         console.info("Resetting back to basics");
         galaxy = structuredClone(galaxyHistory.base);
+        resetAnims = true;
         update = true;
         setTimeout(animateHistory, 2000);
         return;
     }
 
     const snap = galaxyHistory.snapshots[index].data;
+    console.info("Sectors flipping: " + snap.sectors.length);
+    console.info(JSON.stringify(snap.sectors));
     Object.keys(snap.sectors).forEach(ind => {
         let sec = snap.sectors[ind];
         let id = sec.id;
         console.info(JSON.stringify(sec));
         console.info("Sector flipped: " + sec.name + " to " + sec.owner);
-        let prev = galaxy.sectors[id];
 
         galaxy.sectors[id].owner = sec.owner;
         galaxy.sectors[id].division = sec.division;
@@ -123,13 +128,17 @@ function animateHistory() {
         let sys = snap.stellar_systems[ind];
         let id = sys.id;
         let galaxyIndex = systemData[id].index;
-        console.info("System flipped: " + systemData[id].name);
+
+        takenSystems[id] = {startTime:Date.now(), s:sys, radius:2 + zoomLevel * 0.15, dir:0.1};
+
+        // console.info("System flipped: " + systemData[id].name);
         galaxy.stellar_systems[galaxyIndex].owner = sys.owner;
         galaxy.stellar_systems[galaxyIndex].faction = sys.faction;
         galaxy.stellar_systems[galaxyIndex].status = sys.status;
     });
 
     update = true;
+    index++;
     setTimeout(animateHistory, 2000);
 }
 
@@ -146,7 +155,7 @@ function renderer() {
         update = true;
     }
 
-    if(update) {
+    if(update || Object.keys(takenSystems).length !== 0) {
         clear();
         update = false;
 
@@ -160,7 +169,7 @@ function renderer() {
             Object.values(sec.points).forEach(p => {
 
                 let x = (p[0] - galCenter.x - translation.x) * zoomLevel - translation.x + canvas.width / 2;
-                let y = (500 - ((p[1] - galCenter.y + translation.y) * zoomLevel)) - translation.y;
+                let y = (500 - ((p[1] - galCenter.y + translation.y) * zoomLevel)) - translation.y + 100;
 
                 if(prevPoint) {
                     context.lineTo(x, y);
@@ -180,14 +189,35 @@ function renderer() {
         Object.values(galaxy.stellar_systems).forEach(val => {
             let pos = val.position;
             let x = (pos.x - galCenter.x - translation.x) * zoomLevel - translation.x + canvas.width / 2;
-            let y = (500 - ((pos.y - galCenter.y + translation.y) * zoomLevel)) - translation.y;
+            let y = (500 - ((pos.y - galCenter.y + translation.y) * zoomLevel)) - translation.y + 100;
             if(x < canvas.width && x > 0 && y < canvas.height && y > 0) {
                 context.beginPath();
                 context.arc(x, y, 1 + zoomLevel * 0.15, 0, 2 * Math.PI);
                 context.fillStyle = factionColor(val.faction);
                 context.fill();
 
-                // if(zoomLevel)
+                let animate = takenSystems[val.id];
+                if(animate) {
+                    if(animate.startTime + 2000 < Date.now() || resetAnims) {
+                        delete takenSystems[val.id];
+                    }
+                    else {
+                        context.beginPath();
+                        context.arc(x, y, animate.radius * zoomLevel, 0, 2 * Math.PI);
+                        context.fillStyle = factionColor(val.faction, 0.3);
+                        context.fill();
+
+                        animate.radius += animate.dir;
+                        if(animate.radius < 1) {
+                            animate.radius = 1;
+                            animate.dir = 0.1;
+                        }
+                        else if(animate.radius > 4) {
+                            animate.radius = 4;
+                            animate.dir = -0.1;
+                        }
+                    }
+                }
             }
         });
 
@@ -197,6 +227,8 @@ function renderer() {
         // context.arc(canvas.width / 2, canvas.height / 2, 2, 0, 2 * Math.PI);
         // context.fill();
     }
+
+    resetAnims = false;
 }
 
 function factionColor(faction, alpha = 1) {
