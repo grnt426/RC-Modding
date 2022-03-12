@@ -8,6 +8,35 @@ import structuredClone from 'realistic-structured-clone';
 
 const app = express();
 
+let test = [
+    "state_2022-03-10T1.json",
+    "state_2022-03-11T19.json",
+    "state_2022-03-11T3.json",
+    "state_2022-03-09T22.json",
+    "state_2022-03-11T22.json",
+    "state_2022-03-10T11.json",
+    "state_2022-03-10T10.json",
+    "state_2022-03-10T5.json",
+    "state_2022-03-10T12.json",
+    "state_2022-03-10T17.json",
+    "state_2022-03-10T0.json",
+];
+
+test.sort((a, b) => {
+    a = a.split("_")[1];
+    a = a.split(".")[0];
+    b = b.split("_")[1];
+    b = b.split(".")[0];
+
+    a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H");
+    console.info(a.toLocaleString());
+    b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H");
+
+    return a < b ? -1:1;
+});
+
+console.info(test);
+
 let creds;
 let systemDocId;
 let personalDoc;
@@ -61,6 +90,14 @@ app.use(express.static('public/images'));
 
 app.get('/galaxy', cors(), (req, res) => {
     console.info("Sending init data");
+
+    fs.writeFile('legacy7_snapshots/compressed.json', JSON.stringify(galaxyHistory), err => {
+        if (err) {
+            console.error(err)
+            return
+        }
+        //file written successfully
+    });
 
     res.send(JSON.stringify(galaxyHistory));
 });
@@ -212,44 +249,66 @@ async function loadGalaxyHistory() {
 
     let prevState = structuredClone(base.galaxy);
 
-    const files = fs.readdirSync("legacy7_snapshots/");
-    files.sort();
+    let files = fs.readdirSync("legacy7_snapshots/");
+
+    files = files.filter(f => {
+        return /state_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2}\.json(?!.)/.test(f);
+    });
+
+    files.sort((a, b) => {
+        try {
+            console.info("parsing: " + a + " " + b);
+            a = a.split("_")[1];
+            a = a.split(".")[0];
+            b = b.split("_")[1];
+            b = b.split(".")[0];
+
+            a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H");
+            console.info(a.toLocaleString());
+            b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H");
+
+            return a < b ? -1 : 1;
+        }
+        catch(err) {
+            console.info("failed to parse");
+            return -1;
+        }
+    });
+
+    console.info(files);
 
     files.forEach(function(file) {
         console.info("File: " + file);
-        if(/state_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2}\.json(?!.)/.test(file)) {
-            console.info("\tMatched, processing...");
-            const fdata = fs.readFileSync("legacy7_snapshots/"+file, 'utf8');
-            try {
-                let time = file.match(/([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2})/)[0];
-                let state = JSON.parse(fdata);
+        const fdata = fs.readFileSync("legacy7_snapshots/"+file, 'utf8');
+        try {
+            let time = file.match(/([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2})/)[0];
+            let state = JSON.parse(fdata);
 
-                state.sectors = state.sectors.filter((val, i, state) => {
-                    let p = prevState.sectors[i];
-                    if(val.owner !== p.owner) {
-                        prevState.sectors[i] = val;
-                        return true;
-                    }
-                    return false;
-                });
+            state.sectors = state.sectors.filter((val, i, state) => {
+                let p = prevState.sectors[i];
+                if(val.owner !== p.owner) {
+                    prevState.sectors[i] = val;
+                    return true;
+                }
+                return false;
+            });
 
-                state.stellar_systems = state.stellar_systems.filter((val, i, state) => {
-                    let p = prevState.stellar_systems[i];
-                    if(val.owner !== p.owner) {
-                        prevState.stellar_systems[i] = val;
-                        return true;
-                    }
-                    return false;
-                });
-                console.info("Retained data: " + JSON.stringify(state));
+            state.stellar_systems = state.stellar_systems.filter((val, i, state) => {
+                let p = prevState.stellar_systems[i];
+                if(val.owner !== p.owner) {
+                    prevState.stellar_systems[i] = val;
+                    return true;
+                }
+                return false;
+            });
+            console.info("Retained data: " + JSON.stringify(state));
 
-                let snap = {time: time, data: state};
-                galaxyHistory.snapshots.push(snap);
-                console.info("\tProcessed successfully");
-            }
-            catch(err) {
-                console.info("\tFailed: " + err);
-            }
+            let snap = {time: time, data: state};
+            galaxyHistory.snapshots.push(snap);
+            console.info("\tProcessed successfully");
+        }
+        catch(err) {
+            console.info("\tFailed: " + err);
         }
     });
 

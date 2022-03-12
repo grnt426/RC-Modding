@@ -1,3 +1,5 @@
+var DateTime = luxon.DateTime;
+
 $( document ).ready( processData );
 
 const galCenter = {x:0, y:0};
@@ -32,9 +34,30 @@ let resetAnims = false;
 function processData() {
     try {
         $.ajax({
-            url: "http://localhost:8080/galaxy",
+            url: "https://rc-replay.com/compressed.json",
             success: function( result ) {
-                galaxyHistory = JSON.parse(result);
+                console.info(result);
+                galaxyHistory = result;
+
+                galaxyHistory.snapshots = galaxyHistory.snapshots.sort((a, b) => {
+                    try {
+                        console.info("parsing: " + a + " " + b);
+                        a = a.split("_")[1];
+                        a = a.split(".")[0];
+                        b = b.split("_")[1];
+                        b = b.split(".")[0];
+
+                        a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H");
+                        console.info(a.toLocaleString());
+                        b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H");
+
+                        return a < b ? -1 : 1;
+                    }
+                    catch(err) {
+                        console.info("failed to parse");
+                        return -1;
+                    }
+                });
 
                 galaxy = structuredClone(galaxyHistory.base);
 
@@ -264,7 +287,7 @@ function getCurrentSnapTime() {
 }
 
 function wrapTextInFaction(text, faction) {
-    style = "";
+    let style = "";
     switch(faction) {
         case "tetrarchy": style = "tet"; break;
         case "cardan": style = "car"; break;
