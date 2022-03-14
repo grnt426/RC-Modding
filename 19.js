@@ -1881,44 +1881,70 @@
                         key: "init",
                         value: (a = r()(c.a.mark((function t() {
 
-                            if(y.a.state.granite) {
+                            // If the client re-enters the same game instance we may want to check some state again
+                            if(y.a.state.granite && y.a.state.granite.loadedInstance === y.a.state.game.auth.instance) {
                                 // do whatever
                             }
                             else {
                                 y.a.state.granite = {
                                     url:"http://localhost:8080", awaitingSectorDelay:true, knownSystems:[], keepAlive:0,
-                                    lastSentSys:"", playerUpdateTime:0, data:t, snapshotTime:0};
+                                    lastSentSys:"", playerUpdateTime:0, data:t, snapshotTime:0, response:false, sendAllGalacticData:false,
+                                    loadedInstance:y.a.state.game.auth.instance };
+
                                 y.a.state.granite.postData = function(data, type) {
                                     let xhr = new XMLHttpRequest();
                                     xhr.open("POST", y.a.state.granite.url + "/update");
                                     xhr.timeout = 2000;
                                     xhr.setRequestHeader("Content-Type", "application/json");
-                                    xhr.send(JSON.stringify({"type":type, "data":data}));
+                                    xhr.send(JSON.stringify({"type":type, "data":data, "instance":y.a.state.game.auth.instance}));
                                 }
 
-                                /*
-                                y.a.state.granite.getData = function(func) {
+                                y.a.state.granite.getData = function(callback, query) {
                                     let xhr = new XMLHttpRequest();
-                                    xhr.open("GET", y.a.state.granite.url + "/init");
+                                    xhr.open("GET", y.a.state.granite.url + query);
                                     xhr.onreadystatechange = function() {
                                         if (xhr.readyState == XMLHttpRequest.DONE) {
-                                            //func(xhr.responseText);
+                                            callback(xhr.responseText, y.a.state);
                                         }
                                     }
                                     xhr.timeout = 2000;
                                     xhr.send();
-                                }*/
+                                }
 
-                                y.a.state.granite.postData("Online!", "debug");
-                                let cur = y.a.state.game.galaxy;
-                                let galState = {sectors:cur.sectors, stellar_systems:cur.stellar_systems};
-                                y.a.state.granite.postData(galState, "galaxy_snapshot");
-                                y.a.state.granite.snapshotTime = Date.now();
-                                //y.a.state.granite.getData(function(resp){y.a.state.granite.postData(res, "debug");});
+                                y.a.state.granite.postData("Beginning mod loading sequence...", "debug");
+
+                                // check if we need to export the entire galaxy, which is expensive
+                                y.a.state.granite.getData(
+                                    function(res, state) {
+                                        state.granite.response = true;
+
+                                        // the API /galaxy/id sends TRUE if it finds the data, otherwise false. So, we want to send
+                                        // galaxy data only if we get back FALSE, with care taken to not respond on empty responses.
+                                        state.granite.sendAllGalacticData = res ? !(res.toLowerCase() === "true") : false;
+                                    },
+                                    "/galaxy/" + y.a.state.game.auth.instance
+                                );
 
                                 y.a.state.granite.updater = setInterval(
                                     function() {
                                         try {
+
+                                            let granite = y.a.state.granite;
+
+                                            if(y.a.state.granite.response) {
+                                                y.a.state.granite.response = false;
+
+                                                y.a.state.granite.postData("Got response from receiver: " + y.a.state.granite.sendAllGalacticData, "debug");
+                                                if(y.a.state.granite.sendAllGalacticData) {
+                                                    y.a.state.granite.postData(y.a.state.game.galaxy, "galaxy");
+                                                }
+
+                                                y.a.state.granite.sendAllGalacticData = false;
+
+                                                // regardless, we can now send snapshots as we should have a destination for them.
+                                                y.a.state.granite.snapshotTime = Date.now();
+                                            }
+
                                             if(y.a.state.granite.awaitingSectorDelay) {
                                                 if(y.a.state.game.galaxy.sectors) {
                                                     y.a.state.granite.awaitingSectorDelay = false;
@@ -1951,7 +1977,7 @@
                                                     y.a.state.granite.keepAlive += 1;
 
                                                     if(y.a.state.granite.keepAlive % 100 === 0)
-                                                        y.a.state.granite.postData("Nothing to do...", "debug");
+                                                        granite.postData("Keep Alive", "debug");
 
                                                     if(y.a.state.granite.playerUpdateTime % 20 === 0 && y.a.state.granite.thing) {
                                                         y.a.state.granite.postData("About to send player data...", "debug");
@@ -1981,7 +2007,7 @@
                                                 }
                                             }
                                             else {
-                                                y.a.state.granite.postData("Ignoring...", "debug");
+                                                y.a.state.granite.postData("No game loaded; ignoring...", "debug");
                                             }
                                         }
                                         catch(err) {

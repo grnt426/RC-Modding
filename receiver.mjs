@@ -91,6 +91,26 @@ Object.values(curRows).forEach(val => {
 app.use(express.static('public/images'));
 app.use(express.static('src'));
 
+// Check if a Game has already received the base galactic data by instance ID
+app.get("/galaxy/:gameId", cors(), (req, res) => {
+    let gameId = req.params.gameId;
+    console.info("Received Game ID: " + gameId);
+    let haveDir = fs.existsSync("snapshots/" + gameId);
+    console.info("\tFound dir for " + gameId + "? " + haveDir);
+
+    let haveBase = false;
+    if(!haveDir) {
+        fs.mkdirSync("snapshots/" + gameId);
+    }
+    else {
+        haveBase = fs.existsSync("snapshots/" + gameId + "/base.json");
+    }
+
+    res.send(haveBase);
+});
+
+
+// Retrieve the entire snapshot and galactic data for a given game by ID
 app.get('/galaxy', cors(), (req, res) => {
     res.setHeader("Content-Type", "application/json");
     console.info("Sending init data");
@@ -163,7 +183,10 @@ app.post('/update', (req, res) => {
             }
             else if(payload.type === "galaxy") {
                 console.info("Received galaxy");
-                fs.writeFile('test_data/state.json', JSON.stringify(payload.data), err => {
+                let dest = 'snapshots/' + payload.instance + '/base.json';
+                console.info("\tWriting Galaxy data to: " + dest);
+                console.info("\tData: " + payload.data);
+                fs.writeFile(dest, JSON.stringify(payload.data), err => {
                     if (err) {
                         console.error(err)
                         return
@@ -188,7 +211,7 @@ app.post('/update', (req, res) => {
 
                 });
                 let d = DateTime.now();
-                let filename = 'legacy7_snapshots/state_' + d.toISODate() + 'T' + d.hour + '.json';
+                let filename = 'snapshots/' + payload.instance + '/state_' + d.toISODate() + 'T' + d.hour + '.json';
                 console.info("Writing to file: " + filename);
                 fs.writeFile(filename, JSON.stringify(snap), err => {
                     if (err) {
@@ -242,6 +265,8 @@ function getSystemSlotDetails(data) {
 }
 
 async function loadGalaxyHistory() {
+
+    return {};
 
     // we need the base data loaded first before
     const data = fs.readFileSync("legacy7_snapshots/base_data.json", 'utf8');
