@@ -36,22 +36,21 @@ function processData() {
         $.ajax({
             url: "https://rc-replay.com/compressed.json",
             success: function( result ) {
-                console.info(result);
                 galaxyHistory = result;
 
                 galaxyHistory.snapshots = galaxyHistory.snapshots.sort((a, b) => {
                     try {
                         a = a.time;
                         b = b.time;
-                        console.info("parsing: " + a + " " + b);
+                        console.debug("parsing: " + a + " " + b);
                         a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H");
-                        console.info(a.toLocaleString());
+                        console.debug(a.toLocaleString());
                         b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H");
 
                         return a < b ? -1 : 1;
                     }
                     catch(err) {
-                        console.info("failed to parse");
+                        console.error("failed to parse");
                         return -1;
                     }
                 });
@@ -102,12 +101,12 @@ function processData() {
                     }
                 });
 
-                console.info(galaxyHistory);
+                console.debug("Galaxy History: " + JSON.stringify(galaxyHistory));
                 update = true;
             }
         });
     } catch(err) {
-        console.log(err);
+        console.error(err);
     }
 }
 
@@ -124,7 +123,7 @@ function animateHistory() {
         index = 0;
 
         // lazy reset :\
-        console.info("Resetting back to basics");
+        console.debug("Resetting back to start");
         galaxy = structuredClone(galaxyHistory.base);
         resetAnims = true;
         update = true;
@@ -133,13 +132,13 @@ function animateHistory() {
     }
 
     const snap = galaxyHistory.snapshots[index].data;
-    console.info("Sectors flipping: " + snap.sectors.length);
-    console.info(JSON.stringify(snap.sectors));
+    console.debug("Sectors flipping: " + snap.sectors.length);
+    console.debug(JSON.stringify(snap.sectors));
     Object.keys(snap.sectors).forEach(ind => {
         let sec = snap.sectors[ind];
         let id = sec.id;
-        console.info(JSON.stringify(sec));
-        console.info("Sector flipped: " + sec.name + " to " + sec.owner);
+        console.debug(JSON.stringify(sec));
+        console.debug("Sector flipped: " + sec.name + " to " + sec.owner);
 
         galaxy.sectors[id].owner = sec.owner;
         galaxy.sectors[id].division = sec.division;
@@ -169,7 +168,6 @@ function animateHistory() {
                 " from " + wrapTextInFaction(prev.owner, prev.faction) + "<br />"
             );
 
-        // console.info("System flipped: " + systemData[id].name);
         prev.owner = sys.owner;
         prev.faction = sys.faction;
         prev.status = sys.status;
