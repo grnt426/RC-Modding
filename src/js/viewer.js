@@ -41,12 +41,9 @@ function processData() {
 
                 galaxyHistory.snapshots = galaxyHistory.snapshots.sort((a, b) => {
                     try {
+                        a = a.time;
+                        b = b.time;
                         console.info("parsing: " + a + " " + b);
-                        a = a.split("_")[1];
-                        a = a.split(".")[0];
-                        b = b.split("_")[1];
-                        b = b.split(".")[0];
-
                         a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H");
                         console.info(a.toLocaleString());
                         b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H");
