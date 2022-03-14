@@ -2,6 +2,12 @@ var DateTime = luxon.DateTime;
 
 $( document ).ready( processData );
 
+const DEBUG_FLAGS = {
+    DEV_MODE: false
+}
+
+const HOSTNAME = "https://rc-replay.com/compressed.json";
+
 const galCenter = {x:0, y:0};
 
 let galaxyHistory;
@@ -32,9 +38,14 @@ let takenSystems = [];
 let resetAnims = false;
 
 function processData() {
+
+    if(window.location.hostname === "localhost") {
+        DEBUG_FLAGS.DEV_MODE = true;
+    }
+
     try {
         $.ajax({
-            url: "https://rc-replay.com/compressed.json",
+            url: DEBUG_FLAGS.DEV_MODE ? "http://localhost:8080/galaxy" : HOSTNAME,
             success: function( result ) {
                 galaxyHistory = result;
 

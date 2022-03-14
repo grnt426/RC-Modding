@@ -5,8 +5,10 @@ import cors from 'cors';
 const {Console} = console;
 import {DateTime} from "luxon";
 import structuredClone from 'realistic-structured-clone';
+import favicon from "serve-favicon";
 
 const app = express();
+app.use(favicon('public/favicon/favicon.ico'));
 
 let test = [
     "state_2022-03-10T1.json",
@@ -87,19 +89,21 @@ Object.values(curRows).forEach(val => {
 // let galaxy = JSON.parse(fs.readFileSync('legacy7_snapshots/state_2022-03-09T10.json', 'utf8'));
 
 app.use(express.static('public/images'));
+app.use(express.static('src'));
 
 app.get('/galaxy', cors(), (req, res) => {
+    res.setHeader("Content-Type", "application/json");
     console.info("Sending init data");
 
-    fs.writeFile('legacy7_snapshots/compressed.json', JSON.stringify(galaxyHistory), err => {
-        if (err) {
-            console.error(err)
-            return
-        }
-        //file written successfully
-    });
+    // fs.writeFile('legacy7_snapshots/compressed.json', JSON.stringify(galaxyHistory), err => {
+    //     if (err) {
+    //         console.error(err)
+    //         return
+    //     }
+    //     //file written successfully
+    // });
 
-    res.send(JSON.stringify(galaxyHistory));
+    res.send(galaxyHistory);
 });
 
 app.post('/update', (req, res) => {
