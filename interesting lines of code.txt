@@ -66,3 +66,52 @@ main.js - handlesUpdates?
 handleReceive: function(e) {
                 e.new_conversation ? rn.a.commit("portal/newConversation", e.new_conversation) : e.new_message ? rn.a.commit("portal/newMessage", e.new_message) : (Object.keys(e).forEach((function(t) {
                     e[t].receivedAt = Date.now(), console.log("receive: ".concat(t))
+
+contents of `y.a` => ["_committing","_actions","_actionSubscribers","_mutations","_wrappedGetters","_modules","_modulesNamespaceMap","_subscribers","_watcherVM","_makeLocalGettersCache","dispatch","commit","strict","getters","_vm"]
+
+contents of `y` => ["a"]
+
+And the rest; the output is directly from the console
+
+{"type":"debug","data":"s : default,__esModule","instance":2685}
+{"type":"debug","data":"i : a","instance":2685}
+{"type":"debug","data":"n : default,__esModule","instance":2685}
+{"type":"debug","data":"r : a","instance":2685}
+{"type":"debug","data":"o : wrap,isGeneratorFunction,mark,awrap,AsyncIterator,async,keys,values","instance":2685}
+{"type":"debug","data":"c : a","instance":2685}
+{"type":"debug","data":"l : b,c,z,d,a,e,y,k,p,q,m,n,t,s,i,w,g,u,f,r,x,h,v,o,l,j","instance":2685}
+{"type":"debug","data":"u : ","instance":2685}
+{"type":"debug","data":"d : a","instance":2685}
+{"type":"debug","data":"v : default,__esModule","instance":2685}
+{"type":"debug","data":"p : a","instance":2685}
+{"type":"debug","data":"m : default,__esModule","instance":2685}
+{"type":"debug","data":"h : a","instance":2685}
+{"type":"debug","data":"f : ","instance":2685}
+{"type":"debug","data":"_ : a","instance":2685}
+
+Keys of the `l` key:
+
+{"b":[[]],
+"c":[[]],
+"z":[["registerPlugin","timeline","getTweensOf","getProperty","quickSetter","isTweening","defaults","config","registerEffect","registerEase","parseEase","getById","exportRoot","utils","install","effects","ticker","updateRoot","plugins","globalTimeline","core","to","from","fromTo","delayedCall","set","killTweensOf","version"]],
+"d":[["easeIn","easeOut","easeInOut"]],"a":[["easeIn","easeOut","easeInOut"]],"e":[["updateRoot","version"]],
+"y":[[]],
+"k":[[]],
+"p":[[]],
+"q":[[]],
+"m":[[]],
+"n":[[]],
+"t":[[]],
+"s":[[]],
+"i":[[]],
+"w":[[]],
+"g":[[]],
+"u":[[]],
+"f":[[]],
+"r":[["attr","endArray","roundProps","modifiers","snap","css"]],
+"x":[["time","frame","tick","deltaRatio","wake","sleep","lagSmoothing","fps","add","remove","_listeners"]],
+"h":[["autoSleep","force3D","nullTargetWarn","units","stringFilter"]],
+"v":[[]],
+"o":[[]],
+"l":[[]],
+"j":[[]]}
