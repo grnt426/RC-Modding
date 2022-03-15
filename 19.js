@@ -1931,57 +1931,57 @@
 
                                             let granite = y.a.state.granite;
 
-                                            if(y.a.state.granite.response) {
-                                                y.a.state.granite.response = false;
+                                            if(granite.response) {
+                                                granite.response = false;
 
-                                                y.a.state.granite.postData("Got response from receiver: " + y.a.state.granite.sendAllGalacticData, "debug");
-                                                if(y.a.state.granite.sendAllGalacticData) {
-                                                    y.a.state.granite.postData(y.a.state.game.galaxy, "galaxy");
+                                                granite.postData("Got response from receiver: " + y.a.state.granite.sendAllGalacticData, "debug");
+                                                if(granite.sendAllGalacticData) {
+                                                    granite.postData(y.a.state.game.galaxy, "galaxy");
                                                 }
 
-                                                y.a.state.granite.sendAllGalacticData = false;
+                                                granite.sendAllGalacticData = false;
 
                                                 // regardless, we can now send snapshots as we should have a destination for them.
-                                                y.a.state.granite.snapshotTime = Date.now();
+                                                granite.snapshotTime = Date.now();
                                             }
 
-                                            if(y.a.state.granite.awaitingSectorDelay) {
+                                            if(granite.awaitingSectorDelay) {
                                                 if(y.a.state.game.galaxy.sectors) {
-                                                    y.a.state.granite.awaitingSectorDelay = false;
-                                                    y.a.state.granite.postData(y.a.state.game.galaxy.sectors, "sectors");
+                                                    granite.awaitingSectorDelay = false;
+                                                    granite.postData(y.a.state.game.galaxy.sectors, "sectors");
                                                 }
                                             }
 
                                             if(y.a.state.game.player !== undefined && y.a.state.game.player !== null && y.a.state.game.player.account_id != null) {
 
-                                                if(y.a.state.granite.snapshotTime) {
+                                                if(granite.snapshotTime) {
 
                                                     // 1 hr = 60 mins * 60 seconds * 1000 milliseconds
-                                                    if(Date.now() - y.a.state.granite.snapshotTime > 60 * 60 * 1000) {
+                                                    if(Date.now() - granite.snapshotTime > 60 * 60 * 1000) {
                                                         let c = y.a.state.game.galaxy;
                                                         let gal = {sectors:c.sectors, stellar_systems:c.stellar_systems};
-                                                        y.a.state.granite.postData(gal, "galaxy_snapshot");
-                                                        y.a.state.granite.snapshotTime = Date.now();
+                                                        granite.postData(gal, "galaxy_snapshot");
+                                                        granite.snapshotTime = Date.now();
                                                     }
                                                 }
 
                                                 if(y.a.state.game.selectedSystem != null) {
                                                     let sys = y.a.state.game.selectedSystem;
-                                                    if(y.a.state.granite.lastSentSys !== sys.name) {
-                                                        y.a.state.granite.postData(sys, "selectsystem");
-                                                        y.a.state.granite.lastSentSys = sys.name;
+                                                    if(granite.lastSentSys !== sys.name) {
+                                                        granite.postData(sys, "selectsystem");
+                                                        granite.lastSentSys = sys.name;
                                                     }
                                                 }
                                                 else {
-                                                    y.a.state.granite.playerUpdateTime += 1;
-                                                    y.a.state.granite.keepAlive += 1;
+                                                    granite.playerUpdateTime += 1;
+                                                    granite.keepAlive += 1;
 
-                                                    if(y.a.state.granite.keepAlive % 100 === 0)
+                                                    if(granite.keepAlive % 100 === 0)
                                                         granite.postData("Keep Alive", "debug");
 
-                                                    if(y.a.state.granite.playerUpdateTime % 20 === 0 && y.a.state.granite.thing) {
-                                                        y.a.state.granite.postData("About to send player data...", "debug");
-                                                        y.a.state.granite.postData(y.a.state.granite, "debug");
+                                                    if(granite.playerUpdateTime % 20 === 0 && granite.thing) {
+                                                        granite.postData("About to send player data...", "debug");
+                                                        granite.postData(granite, "debug");
 
                                                         /*
                                                         y.a.state.granite.postData(
@@ -2007,11 +2007,11 @@
                                                 }
                                             }
                                             else {
-                                                y.a.state.granite.postData("No game loaded; ignoring...", "debug");
+                                                granite.postData("No game loaded; ignoring...", "debug");
                                             }
                                         }
                                         catch(err) {
-                                            y.a.state.granite.postData(err, "crash");
+                                            granite.postData(err, "crash");
                                         }
                                     },
                                     100
