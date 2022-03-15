@@ -89,12 +89,14 @@ And the rest; the output is directly from the console
 {"type":"debug","data":"f : ","instance":2685}
 {"type":"debug","data":"_ : a","instance":2685}
 
-Keys of the `l` key:
+Keys of the `l` key. Not sure if I exported them wrong?:
 
 {"b":[[]],
 "c":[[]],
 "z":[["registerPlugin","timeline","getTweensOf","getProperty","quickSetter","isTweening","defaults","config","registerEffect","registerEase","parseEase","getById","exportRoot","utils","install","effects","ticker","updateRoot","plugins","globalTimeline","core","to","from","fromTo","delayedCall","set","killTweensOf","version"]],
-"d":[["easeIn","easeOut","easeInOut"]],"a":[["easeIn","easeOut","easeInOut"]],"e":[["updateRoot","version"]],
+"d":[["easeIn","easeOut","easeInOut"]],
+"a":[["easeIn","easeOut","easeInOut"]],
+"e":[["updateRoot","version"]],
 "y":[[]],
 "k":[[]],
 "p":[[]],
