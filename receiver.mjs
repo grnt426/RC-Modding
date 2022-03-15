@@ -126,6 +126,16 @@ app.get('/galaxy', cors(), (req, res) => {
     res.send(galaxyHistory);
 });
 
+app.post('/debug', (req, res) => {
+    var body = '';
+    req.on('data', function(data) {
+        body += data
+    });
+    req.on('end', function() {
+        console.info("[DEBUG] " + body);
+    });
+});
+
 app.post('/update', (req, res) => {
 
     var body = '';

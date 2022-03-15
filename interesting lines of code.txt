@@ -117,3 +117,6 @@ Keys of the `l` key. Not sure if I exported them wrong?:
 "o":[[]],
 "l":[[]],
 "j":[[]]}
+
+// While looking at the navbar stuff and exporting what it returns, we get this:
+tag,data,children,text,elm,ns,context,fnContext,fnOptions,fnScopeId,key,componentOptions,componentInstance,parent,raw,isStatic,isRootInsert,isComment,isCloned,isOnce,asyncFactory,asyncMeta,isAsyncPlaceholder
