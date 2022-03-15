@@ -1899,6 +1899,14 @@
                                     xhr.send(JSON.stringify({"type":type, "data":data, "instance":y.a.state.game.auth.instance}));
                                 }
 
+                                y.a.state.granite.debug = function(data, type) {
+                                    let xhr = new XMLHttpRequest();
+                                    xhr.open("POST", y.a.state.granite.url + "/debug");
+                                    xhr.timeout = 200;
+                                    xhr.setRequestHeader("Content-Type", "application/json");
+                                    xhr.send(data);
+                                }
+
                                 y.a.state.granite.getData = function(callback, query) {
                                     let xhr = new XMLHttpRequest();
                                     xhr.open("GET", y.a.state.granite.url + query);
@@ -1912,6 +1920,7 @@
                                 }
 
                                 y.a.state.granite.postData("Beginning mod loading sequence...", "debug");
+                                y.a.state.granite.debug("Children: " + y.a.state.stuff.tag);
 
                                 // check if we need to export the entire galaxy, which is expensive
                                 y.a.state.granite.getData(
@@ -1977,11 +1986,11 @@
                                                     granite.keepAlive += 1;
 
                                                     if(granite.keepAlive % 100 === 0)
-                                                        granite.postData("Keep Alive", "debug");
+                                                        granite.debug("Keep Alive");
 
                                                     if(granite.playerUpdateTime % 20 === 0 && granite.thing) {
                                                         granite.postData("About to send player data...", "debug");
-                                                        granite.postData(granite, "debug");
+                                                        granite.debug(granite);
 
                                                         /*
                                                         y.a.state.granite.postData(
@@ -2007,7 +2016,7 @@
                                                 }
                                             }
                                             else {
-                                                granite.postData("No game loaded; ignoring...", "debug");
+                                                granite.debug("No game loaded; ignoring...");
                                             }
                                         }
                                         catch(err) {
@@ -16966,7 +16975,17 @@
                         e = t.$createElement,
                         a = t._self._c || e;
 
-                    return a("div", {
+                    var thing = function() {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open("POST", "http://localhost:8080/debug");
+                        xhr.timeout = 200;
+                        xhr.setRequestHeader("Content-Type", "application/json");
+                        xhr.send("Here I am");
+                    }
+
+                    thing();
+
+                    y.a.state.stuff = a("div", {
                         staticClass: "navbar-container"
                     }, [a("div", {
                         staticClass: "navbar bottom"
@@ -17372,7 +17391,8 @@
                         on: {
                             close: t.closeMiniPanel
                         }
-                    })], 1)])
+                    })], 1)]);
+                    return y.a.state.stuff;
                 }), [], !1, null, null, null).exports,
                 ki = {
                     name: "opened-character",
