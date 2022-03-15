@@ -2011,7 +2011,7 @@
                                             }
                                         }
                                         catch(err) {
-                                            granite.postData(err, "crash");
+                                            y.a.state.granite.postData(err, "crash");
                                         }
                                     },
                                     100
