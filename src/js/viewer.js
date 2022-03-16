@@ -22,9 +22,6 @@ let update = false;
 
 let systemData = Array(10000).fill(0);
 
-// animation
-let index = 0;
-
 // translating
 let translation = {x:0, y:0};
 
@@ -41,6 +38,8 @@ let dragEnd = {};
 let takenSystems = [];
 let resetAnims = false;
 let animTimer;
+let historyAnimIndex = 0;
+let linesWritten = 0;
 
 const IMAGES = {
 
@@ -131,17 +130,29 @@ function processData() {
                     let x = event.pageX;
                     let y = event.pageY;
 
-                    // They might have clicked a playback button
-                    if(x < 200 && x > 15 && y < canvas.height - 15 && y > canvas.height - 15 - 50) {
+                    // might have clicked a playback button
+                    if(x <= 200 && x >= 15 && y <= canvas.height - 15 && y >= canvas.height - 15 - 50) {
                         if(x >= 15 && x <= 65) {
                             if(animTimer) {
                                 clearTimeout(animTimer);
                                 animTimer = false;
                             }
-                            // prev
+                            historyAnimIndex -= 2;
+
+                            let log = $("#systemlog");
+                            let text = log.html();
+                            text = text.split("<br>");
+                            text = text.slice(linesWritten);
+                            log.html(text.join("<br>"));
+
+                            if(historyAnimIndex < 0) {
+                                // do something with wrapping to end
+                                historyAnimIndex = 0;
+                            }
+
+                            animateHistory(false);
                         }
                         else if(x >= 80 && x <= 130) {
-                            // play pause
                             if(animTimer) {
                                 clearTimeout(animTimer);
                                 animTimer = false;
@@ -180,9 +191,10 @@ function clear() {
 }
 
 function animateHistory(repeat = true) {
-    if(index >= galaxyHistory.snapshots.length){
+    if(historyAnimIndex >= galaxyHistory.snapshots.length){
         $("#systemlog").html("");
-        index = 0;
+        historyAnimIndex = 0;
+        linesWritten = 0;
 
         // lazy reset :\
         console.debug("Resetting back to start");
@@ -190,11 +202,11 @@ function animateHistory(repeat = true) {
         resetAnims = true;
         update = true;
         if(repeat)
-            animTimer = setTimeout(animateHistory, 5000);
+            animTimer = setTimeout(animateHistory, 2000);
         return;
     }
 
-    const snap = galaxyHistory.snapshots[index].data;
+    const snap = galaxyHistory.snapshots[historyAnimIndex].data;
     console.debug("Sectors flipping: " + snap.sectors.length);
     console.debug(JSON.stringify(snap.sectors));
     Object.keys(snap.sectors).forEach(ind => {
@@ -208,6 +220,7 @@ function animateHistory(repeat = true) {
     });
 
     let systemLog = $("#systemlog");
+    linesWritten = 0;
     Object.keys(snap.stellar_systems).forEach(ind => {
         let sys = snap.stellar_systems[ind];
         let id = sys.id;
@@ -215,6 +228,7 @@ function animateHistory(repeat = true) {
 
         takenSystems[id] = {startTime:Date.now(), s:sys, radius:2 + zoomLevel * 0.15, dir:0.1};
         let prev = galaxy.stellar_systems[galaxyIndex];
+        linesWritten++;
 
         if(!sys.owner) {
             systemLog.prepend(
@@ -238,9 +252,10 @@ function animateHistory(repeat = true) {
 
     let time = getCurrentSnapTime();
     systemLog.prepend(" ~~~ " + time[0] + " " + time[1] + ":00" + " ~~~ <br />");
+    linesWritten++;
 
     update = true;
-    index++;
+    historyAnimIndex++;
 
     if(repeat)
         animTimer = setTimeout(animateHistory, 2000);
@@ -347,7 +362,7 @@ function renderer() {
 }
 
 function getCurrentSnapTime() {
-    let time = galaxyHistory.snapshots[index] === undefined ? galaxyHistory.snapshots[index-1].time : galaxyHistory.snapshots[index].time;
+    let time = galaxyHistory.snapshots[historyAnimIndex] === undefined ? galaxyHistory.snapshots[historyAnimIndex-1].time : galaxyHistory.snapshots[historyAnimIndex].time;
     return time.split("T");
 }
 
