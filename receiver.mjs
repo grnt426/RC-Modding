@@ -276,8 +276,6 @@ function getSystemSlotDetails(data) {
 
 async function loadGalaxyHistory() {
 
-    return {};
-
     // we need the base data loaded first before
     const data = fs.readFileSync("legacy7_snapshots/base_data.json", 'utf8');
     const base = JSON.parse(data);

@@ -6,7 +6,11 @@ const DEBUG_FLAGS = {
     DEV_MODE: false
 }
 
-const HOSTNAME = "https://rc-replay.com/compressed.json";
+if(window.location.hostname === "localhost") {
+    DEBUG_FLAGS.DEV_MODE = true;
+}
+
+const HOSTNAME = DEBUG_FLAGS.DEV_MODE ? "http://localhost:8080" : "https://rc-replay.com" ;
 
 const galCenter = {x:0, y:0};
 
@@ -36,16 +40,27 @@ let dragEnd = {};
 // Animating Taken Systems
 let takenSystems = [];
 let resetAnims = false;
+let animTimer;
+
+const IMAGES = {
+
+};
+
+loadImage("play", HOSTNAME + "/play.png");
+loadImage("prev", HOSTNAME + "/prev.png");
+loadImage("next", HOSTNAME + "/next.png");
+
+function loadImage(name, url, x, y) {
+    let img = new Image();
+    img.src = url;
+    IMAGES[name] = {i:img, x:x, y:y};
+}
 
 function processData() {
 
-    if(window.location.hostname === "localhost") {
-        DEBUG_FLAGS.DEV_MODE = true;
-    }
-
     try {
         $.ajax({
-            url: DEBUG_FLAGS.DEV_MODE ? "http://localhost:8080/galaxy" : HOSTNAME,
+            url: HOSTNAME + DEBUG_FLAGS.DEV_MODE ? "/galaxy" : "/compressed.json",
             success: function( result ) {
                 galaxyHistory = result;
 
@@ -112,8 +127,39 @@ function processData() {
                     }
                 });
 
+                canvas.addEventListener('click', function(event) {
+                    let x = event.pageX;
+                    let y = event.pageY;
+
+                    // They might have clicked a playback button
+                    if(x < 200 && x > 15 && y < canvas.height - 15 && y > canvas.height - 15 - 50) {
+                        if(x >= 15 && x <= 65) {
+                            // prev
+                        }
+                        else if(x >= 80 && x <= 130) {
+                            // play pause
+                            if(animTimer) {
+                                clearTimeout(animTimer);
+                                animTimer = false;
+                            } else {
+                                animateHistory();
+                            }
+                        }
+                        else if(x >= 145 && x <= 195) {
+                            // next
+                        }
+                    }
+                });
+
+                // context.drawImage(IMAGES.prev.i, 15, canvas.height - 65);
+                // context.drawImage(IMAGES.play.i, 80, canvas.height - 65);
+                // context.drawImage(IMAGES.next.i, 145, canvas.height - 65);
+
                 console.debug("Galaxy History: " + JSON.stringify(galaxyHistory));
                 update = true;
+
+                setInterval(renderer, 10);
+                animTimer = setTimeout(animateHistory, 2000);
             }
         });
     } catch(err) {
@@ -125,9 +171,6 @@ function clear() {
     context.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-setInterval(renderer, 10);
-setTimeout(animateHistory, 2000);
-
 function animateHistory() {
     if(index >= galaxyHistory.snapshots.length){
         $("#systemlog").html("");
@@ -138,7 +181,7 @@ function animateHistory() {
         galaxy = structuredClone(galaxyHistory.base);
         resetAnims = true;
         update = true;
-        setTimeout(animateHistory, 2000);
+        animTimer = setTimeout(animateHistory, 2000);
         return;
     }
 
@@ -189,7 +232,7 @@ function animateHistory() {
 
     update = true;
     index++;
-    setTimeout(animateHistory, 2000);
+    animTimer = setTimeout(animateHistory, 2000);
 }
 
 function renderer() {
@@ -282,6 +325,11 @@ function renderer() {
         context.font = '30px sans-serif';
         context.fillStyle = 'rgb(126,126,126)';
         context.fillText(comps[0] + " " + comps[1] + ":00", canvas.width - 250, canvas.height - 20);
+
+        // Draw Buttons
+        context.drawImage(IMAGES.prev.i, 15, canvas.height - 65);
+        context.drawImage(IMAGES.play.i, 80, canvas.height - 65);
+        context.drawImage(IMAGES.next.i, 145, canvas.height - 65);
     }
 
     resetAnims = false;
