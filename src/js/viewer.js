@@ -134,6 +134,10 @@ function processData() {
                     // They might have clicked a playback button
                     if(x < 200 && x > 15 && y < canvas.height - 15 && y > canvas.height - 15 - 50) {
                         if(x >= 15 && x <= 65) {
+                            if(animTimer) {
+                                clearTimeout(animTimer);
+                                animTimer = false;
+                            }
                             // prev
                         }
                         else if(x >= 80 && x <= 130) {
@@ -146,7 +150,11 @@ function processData() {
                             }
                         }
                         else if(x >= 145 && x <= 195) {
-                            // next
+                            if(animTimer) {
+                                clearTimeout(animTimer);
+                                animTimer = false;
+                            }
+                            animateHistory(false);
                         }
                     }
                 });
@@ -171,7 +179,7 @@ function clear() {
     context.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function animateHistory() {
+function animateHistory(repeat = true) {
     if(index >= galaxyHistory.snapshots.length){
         $("#systemlog").html("");
         index = 0;
@@ -181,7 +189,8 @@ function animateHistory() {
         galaxy = structuredClone(galaxyHistory.base);
         resetAnims = true;
         update = true;
-        animTimer = setTimeout(animateHistory, 2000);
+        if(repeat)
+            animTimer = setTimeout(animateHistory, 5000);
         return;
     }
 
@@ -232,7 +241,9 @@ function animateHistory() {
 
     update = true;
     index++;
-    animTimer = setTimeout(animateHistory, 2000);
+
+    if(repeat)
+        animTimer = setTimeout(animateHistory, 2000);
 }
 
 function renderer() {
