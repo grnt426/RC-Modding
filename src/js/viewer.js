@@ -59,7 +59,7 @@ function processData() {
 
     try {
         $.ajax({
-            url: HOSTNAME + DEBUG_FLAGS.DEV_MODE ? "/galaxy" : "/compressed.json",
+            url: HOSTNAME + DEBUG_FLAGS.DEV_MODE ? "/galaxy/replay/2692" : "/compressed.json",
             success: function( result ) {
                 galaxyHistory = result;
 
@@ -68,9 +68,9 @@ function processData() {
                         a = a.time;
                         b = b.time;
                         console.debug("parsing: " + a + " " + b);
-                        a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H");
+                        a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H-m");
                         console.debug(a.toLocaleString());
-                        b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H");
+                        b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H-m");
 
                         return a < b ? -1 : 1;
                     }
@@ -133,24 +133,24 @@ function processData() {
                     // might have clicked a playback button
                     if(x <= 200 && x >= 15 && y <= canvas.height - 15 && y >= canvas.height - 15 - 50) {
                         if(x >= 15 && x <= 65) {
-                            if(animTimer) {
-                                clearTimeout(animTimer);
-                                animTimer = false;
-                            }
-                            historyAnimIndex -= 2;
-
-                            let log = $("#systemlog");
-                            let text = log.html();
-                            text = text.split("<br>");
-                            text = text.slice(linesWritten);
-                            log.html(text.join("<br>"));
-
-                            if(historyAnimIndex < 0) {
-                                // do something with wrapping to end
-                                historyAnimIndex = 0;
-                            }
-
-                            animateHistory(false);
+                            // if(animTimer) {
+                            //     clearTimeout(animTimer);
+                            //     animTimer = false;
+                            // }
+                            // historyAnimIndex -= 2;
+                            //
+                            // let log = $("#systemlog");
+                            // let text = log.html();
+                            // text = text.split("<br>");
+                            // text = text.slice(linesWritten);
+                            // log.html(text.join("<br>"));
+                            //
+                            // if(historyAnimIndex < 0) {
+                            //     // do something with wrapping to end
+                            //     historyAnimIndex = 0;
+                            // }
+                            //
+                            // animateHistory(false);
                         }
                         else if(x >= 80 && x <= 130) {
                             if(animTimer) {
@@ -353,7 +353,7 @@ function renderer() {
         context.fillText(comps[0] + " " + comps[1] + ":00", canvas.width - 250, canvas.height - 20);
 
         // Draw Buttons
-        context.drawImage(IMAGES.prev.i, 15, canvas.height - 65);
+        // context.drawImage(IMAGES.prev.i, 15, canvas.height - 65);
         context.drawImage(IMAGES.play.i, 80, canvas.height - 65);
         context.drawImage(IMAGES.next.i, 145, canvas.height - 65);
     }

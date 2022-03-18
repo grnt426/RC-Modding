@@ -1881,6 +1881,7 @@
                         key: "init",
                         value: (a = r()(c.a.mark((function t() {
 
+
                             // If the client re-enters the same game instance we may want to check some state again
                             if(y.a.state.granite && y.a.state.granite.loadedInstance === y.a.state.game.auth.instance) {
                                 // do whatever
@@ -1943,7 +1944,6 @@
                                             if(granite.response) {
                                                 granite.response = false;
 
-                                                granite.postData("Got response from receiver: " + y.a.state.granite.sendAllGalacticData, "debug");
                                                 if(granite.sendAllGalacticData) {
                                                     granite.postData(y.a.state.game.galaxy, "galaxy");
                                                 }
@@ -1965,8 +1965,8 @@
 
                                                 if(granite.snapshotTime) {
 
-                                                    // 1 hr = 60 mins * 60 seconds * 1000 milliseconds
-                                                    if(Date.now() - granite.snapshotTime > 60 * 60 * 1000) {
+                                                    // 5 mins in milliseconds = 5 mins * 60 seconds * 1000 milliseconds
+                                                    if(Date.now() - granite.snapshotTime > 60 * 1001) {
                                                         let c = y.a.state.game.galaxy;
                                                         let gal = {sectors:c.sectors, stellar_systems:c.stellar_systems};
                                                         granite.postData(gal, "galaxy_snapshot");
@@ -1992,7 +1992,7 @@
                                                         granite.postData("About to send player data...", "debug");
                                                         granite.debug(granite);
 
-                                                        /*
+
                                                         y.a.state.granite.postData(
                                                             {
                                                                 "credits":y.a.state.granite.thing.player.state.game.player.credit.value, "creditIn":y.a.state.granite.data.state.game.player.credit.change,
@@ -2000,9 +2000,9 @@
                                                                 "ideo":y.a.state.granite.thing.player.state.game.player.ideology.value, "ideoIn":y.a.state.granite.thing.state.game.player.ideology.change,
                                                             },
                                                             "player"
-                                                        );*/
+                                                        );
 
-                                                        /*
+
                                                         y.a.state.granite.postData(
                                                             {
                                                                 "credits":y.a.state.granite.data.player.state.game.player.credit.value, "creditIn":y.a.state.granite.data.state.game.player.credit.change,
@@ -2011,7 +2011,7 @@
                                                             },
                                                             "player"
                                                         );
-                                                        */
+
                                                     }
                                                 }
                                             }

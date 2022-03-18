@@ -10,47 +10,9 @@ import favicon from "serve-favicon";
 const app = express();
 app.use(favicon('public/favicon/favicon.ico'));
 
-let test = [
-    "state_2022-03-10T1.json",
-    "state_2022-03-11T19.json",
-    "state_2022-03-11T3.json",
-    "state_2022-03-09T22.json",
-    "state_2022-03-11T22.json",
-    "state_2022-03-10T11.json",
-    "state_2022-03-10T10.json",
-    "state_2022-03-10T5.json",
-    "state_2022-03-10T12.json",
-    "state_2022-03-10T17.json",
-    "state_2022-03-10T0.json",
-];
-
-test.sort((a, b) => {
-    a = a.split("_")[1];
-    a = a.split(".")[0];
-    b = b.split("_")[1];
-    b = b.split(".")[0];
-
-    a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H");
-    console.info(a.toLocaleString());
-    b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H");
-
-    return a < b ? -1:1;
-});
-
-console.info(test);
-
 let creds;
 let systemDocId;
 let personalDoc;
-
-const galaxyHistory = {};
-
-try {
-    await loadGalaxyHistory();
-}
-catch(err){
-    console.info(err);
-}
 
 try {
     console.info("Loading credentials for GCP");
@@ -86,8 +48,6 @@ Object.values(curRows).forEach(val => {
     }
 });
 
-// let galaxy = JSON.parse(fs.readFileSync('legacy7_snapshots/state_2022-03-09T10.json', 'utf8'));
-
 app.use(express.static('public/images'));
 app.use(express.static('src'));
 
@@ -111,19 +71,15 @@ app.get("/galaxy/:gameId", cors(), (req, res) => {
 
 
 // Retrieve the entire snapshot and galactic data for a given game by ID
-app.get('/galaxy', cors(), (req, res) => {
+app.get('/galaxy/replay/:gameId', cors(), (req, res) => {
     res.setHeader("Content-Type", "application/json");
     console.info("Sending init data");
 
-    // fs.writeFile('legacy7_snapshots/compressed.json', JSON.stringify(galaxyHistory), err => {
-    //     if (err) {
-    //         console.error(err)
-    //         return
-    //     }
-    //     //file written successfully
-    // });
+    // sanity check ID
 
-    res.send(galaxyHistory);
+    // check if exists
+
+    res.send(loadGalaxyHistory(req.params.gameId));
 });
 
 app.post('/debug', (req, res) => {
@@ -196,7 +152,7 @@ app.post('/update', (req, res) => {
                 let dest = 'snapshots/' + payload.instance + '/base.json';
                 console.info("\tWriting Galaxy data to: " + dest);
                 console.info("\tData: " + payload.data);
-                fs.writeFile(dest, JSON.stringify(payload.data), err => {
+                fs.writeFile(dest, JSON.stringify({start:(DateTime.now()).toISO(), galaxy:payload.data}), err => {
                     if (err) {
                         console.error(err)
                         return
@@ -218,10 +174,11 @@ app.post('/update', (req, res) => {
                     delete s.position;
                     delete s.score;
                     delete s.type;
-
                 });
+
                 let d = DateTime.now();
-                let filename = 'snapshots/' + payload.instance + '/state_' + d.toISODate() + 'T' + d.hour + '.json';
+                let filename = 'snapshots/' + payload.instance + '/state_'
+                    + d.toISODate() + 'T' + d.hour + '-' + d.minute +'.json';
                 console.info("Writing to file: " + filename);
                 fs.writeFile(filename, JSON.stringify(snap), err => {
                     if (err) {
@@ -274,35 +231,37 @@ function getSystemSlotDetails(data) {
     return res;
 }
 
-async function loadGalaxyHistory() {
+function loadGalaxyHistory(instanceId) {
 
     // we need the base data loaded first before
-    const data = fs.readFileSync("legacy7_snapshots/base_data.json", 'utf8');
+    let galaxyHistory = {};
+    const baseDir = "snapshots/" + instanceId + "/";
+    const data = fs.readFileSync(baseDir + "base.json", 'utf8');
     const base = JSON.parse(data);
+    console.info("Retrieved base data: " + base);
     galaxyHistory.start = base.start;
     console.info("Galaxy starts at " + galaxyHistory.start);
     galaxyHistory.base = base.galaxy;
     galaxyHistory.snapshots = [];
 
     let prevState = structuredClone(base.galaxy);
+    console.info("Previous State: " + prevState);
 
-    let files = fs.readdirSync("legacy7_snapshots/");
+    let files = fs.readdirSync(baseDir);
 
     files = files.filter(f => {
-        return /state_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2}\.json(?!.)/.test(f);
+        return /state_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2}-[0-9]{1,2}\.json(?!.)/.test(f);
     });
 
     files.sort((a, b) => {
         try {
-            console.info("parsing: " + a + " " + b);
             a = a.split("_")[1];
             a = a.split(".")[0];
             b = b.split("_")[1];
             b = b.split(".")[0];
 
-            a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H");
-            console.info(a.toLocaleString());
-            b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H");
+            a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H-m");
+            b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H-m");
 
             return a < b ? -1 : 1;
         }
@@ -312,14 +271,14 @@ async function loadGalaxyHistory() {
         }
     });
 
-    console.info(files);
-
     files.forEach(function(file) {
         console.info("File: " + file);
-        const fdata = fs.readFileSync("legacy7_snapshots/"+file, 'utf8');
+        const fdata = fs.readFileSync(baseDir + file, 'utf8');
         try {
-            let time = file.match(/([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2})/)[0];
+            let time = file.split("_")[1].split(".")[0];
             let state = JSON.parse(fdata);
+
+            console.info("\tSectors to parse: " + state.sectors);
 
             state.sectors = state.sectors.filter((val, i, state) => {
                 let p = prevState.sectors[i];
@@ -329,6 +288,7 @@ async function loadGalaxyHistory() {
                 }
                 return false;
             });
+            console.info("\tRetained Sectors: " + JSON.stringify(state.sectors));
 
             state.stellar_systems = state.stellar_systems.filter((val, i, state) => {
                 let p = prevState.stellar_systems[i];
@@ -338,10 +298,12 @@ async function loadGalaxyHistory() {
                 }
                 return false;
             });
-            console.info("Retained data: " + JSON.stringify(state));
+            console.info("\tRetained Systems: " + JSON.stringify(state.stellar_systems));
 
-            let snap = {time: time, data: state};
-            galaxyHistory.snapshots.push(snap);
+            // only push if not empty
+            if(state.stellar_systems.length !== 0 || state.sectors.length !== 0) {
+                galaxyHistory.snapshots.push({time: time, data: state});
+            }
             console.info("\tProcessed successfully");
         }
         catch(err) {
@@ -349,7 +311,9 @@ async function loadGalaxyHistory() {
         }
     });
 
-    console.info("All done!");
+    console.info("All done! Result: " + galaxyHistory);
+
+    return galaxyHistory;
 }
 
 async function loadGoogleSheet(id) {
