@@ -13,6 +13,13 @@ Note, the game does not seem to send data for things the current player can't se
 
 With this, I have exported data, which the following sections break down.
 
+# Debugger on the Running Game
+* Download [NW](https://dl.nwjs.io/v0.54.0/)
+* Unzip the contents
+* Copy the contents into the Steam directory for where Rising Constellations in installed
+* Run the game
+* Hit F12 once its loaded to get the debug window open
+
 ## Exported Data
 It is recommended to blank out the auth object after exporting y.a.state.game. I don't know if that can be used to auth as another user, but better safe than sorry.
 
