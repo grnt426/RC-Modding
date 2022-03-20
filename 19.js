@@ -127,6 +127,18 @@
                     return h()(t, [{
                         key: "update",
                         value: function(t) {
+
+                            try {
+                                if(y.a.state.granite) {
+                                    let granite = y.a.state.granite;
+
+                                    granite.postData(t, "incr_update", "/incr_update");
+                                }
+                            }
+                            catch(err) {
+                                console.error("ERROR: Went wrong in processing update: " + err);
+                            }
+
                             if (t.global_galaxy && (this.createSystem(t.global_galaxy.stellar_systems), this.updateSectors(t.global_galaxy.sectors), this.blackholes = t.global_galaxy.blackholes), t.global_galaxy_system && this.updateSystems([t.global_galaxy_system], {}), t.faction_faction && (this.updateSystems([], t.faction_faction.contacts), this.updateRadars(t.faction_faction.radars)), t.detected_objects && this.updateDetectedObjects(t.detected_objects), t.faction_faction_contact) {
                                 var e = i()({}, t.faction_faction_contact.system_id, t.faction_faction_contact.contact);
                                 this.updateSystems([], e)
@@ -1882,9 +1894,22 @@
                         value: (a = r()(c.a.mark((function t() {
 
 
-                            // If the client re-enters the same game instance we may want to check some state again
-                            if(y.a.state.granite && y.a.state.granite.loadedInstance === y.a.state.game.auth.instance) {
-                                // do whatever
+                            // The client re-entered the game
+                            if(y.a.state.granite){
+
+                                y.a.state.granite.debug("Previously loaded. Checking if same instance...");
+
+                                // If they switched game instances, then we need to reset some state.
+                                if(y.a.state.granite.loadedInstance !== y.a.state.game.auth.instance) {
+                                    y.a.state.granite.debug("Different instance. Loading diff.");
+                                    let prevData = y.a.state.granite;
+                                    prevData.snapshotTime = false;
+                                    prevData.lastSentSys = "";
+                                    prevData.loadedInstance = y.a.state.game.auth.instance;
+                                    prevData.awaitingSectorDelay = true;
+                                    prevData.knownSystems = [];
+                                    y.a.state.granite.getData(y.a.state.granite.checkGalaxyRequest, "/galaxy/" + y.a.state.game.auth.instance);
+                                }
                             }
                             else {
                                 y.a.state.granite = {
@@ -1892,15 +1917,15 @@
                                     lastSentSys:"", playerUpdateTime:0, data:t, snapshotTime:0, response:false, sendAllGalacticData:false,
                                     loadedInstance:y.a.state.game.auth.instance };
 
-                                y.a.state.granite.postData = function(data, type) {
+                                y.a.state.granite.postData = function(data, type, path = "/update") {
                                     let xhr = new XMLHttpRequest();
-                                    xhr.open("POST", y.a.state.granite.url + "/update");
+                                    xhr.open("POST", y.a.state.granite.url + path);
                                     xhr.timeout = 2000;
                                     xhr.setRequestHeader("Content-Type", "application/json");
                                     xhr.send(JSON.stringify({"type":type, "data":data, "instance":y.a.state.game.auth.instance}));
                                 }
 
-                                y.a.state.granite.debug = function(data, type) {
+                                y.a.state.granite.debug = function(data) {
                                     let xhr = new XMLHttpRequest();
                                     xhr.open("POST", y.a.state.granite.url + "/debug");
                                     xhr.timeout = 200;
@@ -1920,20 +1945,18 @@
                                     xhr.send();
                                 }
 
-                                y.a.state.granite.postData("Beginning mod loading sequence...", "debug");
-                                y.a.state.granite.debug("Children: " + y.a.state.stuff.tag);
+                                y.a.state.granite.checkGalaxyRequest = function(res, state) {
+                                    state.granite.response = true;
+
+                                    // the API /galaxy/id sends TRUE if it finds the data, otherwise false. So, we want to send
+                                    // galaxy data only if we get back FALSE, with care taken to not respond on empty responses.
+                                    state.granite.sendAllGalacticData = res ? !(res.toLowerCase() === "true") : false;
+                                };
+
+                                y.a.state.granite.debug("Beginning mod loading sequence...");
 
                                 // check if we need to export the entire galaxy, which is expensive
-                                y.a.state.granite.getData(
-                                    function(res, state) {
-                                        state.granite.response = true;
-
-                                        // the API /galaxy/id sends TRUE if it finds the data, otherwise false. So, we want to send
-                                        // galaxy data only if we get back FALSE, with care taken to not respond on empty responses.
-                                        state.granite.sendAllGalacticData = res ? !(res.toLowerCase() === "true") : false;
-                                    },
-                                    "/galaxy/" + y.a.state.game.auth.instance
-                                );
+                                y.a.state.granite.getData(y.a.state.granite.checkGalaxyRequest, "/galaxy/" + y.a.state.game.auth.instance);
 
                                 y.a.state.granite.updater = setInterval(
                                     function() {
@@ -1954,6 +1977,7 @@
                                                 granite.snapshotTime = Date.now();
                                             }
 
+                                            // Wait to send sectors until they are loaded (can take some time)
                                             if(granite.awaitingSectorDelay) {
                                                 if(y.a.state.game.galaxy.sectors) {
                                                     granite.awaitingSectorDelay = false;
@@ -1966,9 +1990,9 @@
                                                 if(granite.snapshotTime) {
 
                                                     // 5 mins in milliseconds = 5 mins * 60 seconds * 1000 milliseconds
-                                                    if(Date.now() - granite.snapshotTime > 60 * 1001) {
+                                                    if(Date.now() - granite.snapshotTime > 60 * 1010) {
                                                         let c = y.a.state.game.galaxy;
-                                                        let gal = {sectors:c.sectors, stellar_systems:c.stellar_systems};
+                                                        let gal = {rand:Math.random(), "time":c.receivedAt, sectors:c.sectors, stellar_systems:c.stellar_systems, players:c.players};
                                                         granite.postData(gal, "galaxy_snapshot");
                                                         granite.snapshotTime = Date.now();
                                                     }
@@ -1988,8 +2012,8 @@
                                                     if(granite.keepAlive % 100 === 0)
                                                         granite.debug("Keep Alive");
 
-                                                    if(granite.playerUpdateTime % 20 === 0 && granite.thing) {
-                                                        granite.postData("About to send player data...", "debug");
+                                                    /*if(granite.playerUpdateTime % 20 === 0 && granite.thing) {
+                                                        granite.debug("About to send player data...");
                                                         granite.debug(granite);
 
 
@@ -2012,11 +2036,11 @@
                                                             "player"
                                                         );
 
-                                                    }
+                                                    }*/
                                                 }
                                             }
                                             else {
-                                                granite.debug("No game loaded; ignoring...");
+                                                //granite.debug("No game loaded; ignoring...");
                                             }
                                         }
                                         catch(err) {
@@ -16983,7 +17007,7 @@
                         xhr.send("Here I am");
                     }
 
-                    thing();
+                    //thing();
 
                     y.a.state.stuff = a("div", {
                         staticClass: "navbar-container"
