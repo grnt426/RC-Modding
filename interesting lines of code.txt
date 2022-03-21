@@ -38,9 +38,11 @@ switchSystem: function(t) { -> When you click arrow buttons to rotate through sy
                                  staticClass: "panel-content is-small"
                              }, [a("v-scrollbar", {
 
+0.js - looks liike map draw
+2.js - login/loading screen
 
 8.js looks like the lobby creation stuff?
-9.js looks like the screen for joining a game?
+9.js main menu
 12.js is account stuff related? Upgrade from free account
 13.js more account stuff. Something about passwords?
 
@@ -120,3 +122,14 @@ Keys of the `l` key. Not sure if I exported them wrong?:
 
 // While looking at the navbar stuff and exporting what it returns, we get this:
 tag,data,children,text,elm,ns,context,fnContext,fnOptions,fnScopeId,key,componentOptions,componentInstance,parent,raw,isStatic,isRootInsert,isComment,isCloned,isOnce,asyncFactory,asyncMeta,isAsyncPlaceholder
+
+// Looks like system data have built in functions for computing distances
+getClosestSystemId: function(t) {
+    var e = this,
+        a = this.mainSystem.position;
+    return this.$store.state.game.galaxy.stellar_systems.filter((function(e) {
+        return e.status === t
+    })).sort((function(t, s) {
+        return e.distance(a, t.position) - e.distance(a, s.position)
+    }))[0].id
+}

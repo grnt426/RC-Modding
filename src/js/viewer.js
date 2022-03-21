@@ -322,7 +322,7 @@ function renderer() {
                     }
                     else {
                         context.beginPath();
-                        context.arc(x, y, animate.radius * zoomLevel, 0, 2 * Math.PI);
+                        context.arc(x, y, 10 + animate.radius * zoomLevel * 0.15, 0, 2 * Math.PI);
                         context.fillStyle = factionColor(val.faction, 0.3);
                         context.fill();
 

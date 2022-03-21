@@ -13,6 +13,7 @@ app.use(favicon('public/favicon/favicon.ico'));
 let creds;
 let systemDocId;
 let personalDoc;
+const loadedGalaxies = {};
 
 try {
     console.info("Loading credentials for GCP");
@@ -89,6 +90,88 @@ app.post('/debug', (req, res) => {
     });
     req.on('end', function() {
         console.info("[DEBUG] " + body);
+        res.writeHead(200, {'Content-Type': 'text/html'});
+        res.end('received');
+    });
+});
+
+/**
+ * This route assumes no other calls to this API can be made until a currently executing call are finished. This is
+ * desireable because each time this API is called, we save the large snapshot history to disk and order is preserved.
+ * If multiple calls could execute simultaneously, they could cause non-atomic updates.
+ *
+ * This is called out explicitly for the eventual future these APIs are made more performant through async handlers.
+ */
+app.post('/incr_update', (req, res) => {
+    var body = '';
+    req.on('data', function(data) {
+        body += data
+    });
+    req.on('end', function() {
+        res.setHeader("Content-Type", "application/json");
+
+        try {
+            const payload = JSON.parse(body);
+            const update = payload.data;
+            const instance = payload.instance;
+            const history = !loadedGalaxies[instance] ? loadImprovedGalaxyHistory(instance) : loadedGalaxies[instance];
+
+            if(update.global_character_market || update.global_victory || update.global_galaxy_sector) {
+
+            }
+            else if(update.global_galaxy_system) {
+                const sys = update.global_galaxy_system;
+                const curState = history.current;
+                const storedSys = curState.stellar_systems[sys.id];
+                const prev = curState.stellar_systems[sys.id];
+
+                if(prev.owner !== sys.owner) {
+
+                    // Create a snapshot that allows us to undo this step
+                    const u = structuredClone(sys);
+                    delete u.position;
+                    delete u.score;
+                    delete u.receivedAt;
+                    u.owner = storedSys.owner;
+                    u.faction = storedSys.faction;
+                    u.time = history.currentTime;
+
+                    // Clean up the current snapshot
+                    sys.time = DateTime.now().toISO();
+                    delete sys.position;
+                    delete sys.score;
+                    delete sys.receivedAt;
+
+                    // Build the forwards/backwards snapshots
+                    history.undo.push(u);
+                    history.snapshots.push(sys);
+
+                    // Update the stored current state of the galaxy
+                    storedSys.owner = sys.owner;
+                    storedSys.faction = sys.faction;
+                    storedSys.status = sys.status;
+                    history.currentTime = sys.time;
+
+                    // Finally save to disk
+                    fs.writeFileSync("snapshots/" + instance + "/history.json", JSON.stringify(history), err => {
+                        if (err) {
+                            console.error("FAILED TO SAVE HISTORY UPDATE: " + err);
+                        }
+                    });
+                }
+            }
+            else {
+                console.debug(body);
+            }
+
+            res.writeHead(200, {'Content-Type': 'text/html'});
+            res.end('post received');
+        }
+        catch(err) {
+            console.error("Crashed in processing incr_update: " + err);
+            res.writeHead(503, {'Content-Type': 'text/html'});
+            res.end('Error in processing');
+        }
     });
 });
 
@@ -149,10 +232,25 @@ app.post('/update', (req, res) => {
             }
             else if(payload.type === "galaxy") {
                 console.info("Received galaxy");
-                let dest = 'snapshots/' + payload.instance + '/base.json';
+                let dest = 'snapshots/' + payload.instance;
                 console.info("\tWriting Galaxy data to: " + dest);
-                console.info("\tData: " + payload.data);
-                fs.writeFile(dest, JSON.stringify({start:(DateTime.now()).toISO(), galaxy:payload.data}), err => {
+                // console.info("\tData: " + payload.data);
+
+                // NEW HISTORY FORMAT TYPE
+                const historyData = {
+                    start:DateTime.now().toISO(), base:payload.data,
+                    current:structuredClone(payload.data), snapshots: [], undo: [], instance:payload.instance,
+                    currentTime:DateTime.now().toISO()
+                }
+                fs.writeFile(dest + "/history.json", JSON.stringify(historyData), err => {
+                    if (err) {
+                        console.error(err)
+                    }
+                });
+
+                // OLD SNAPSHOT FORMAT TYPE
+                const fileData = {start:(DateTime.now()).toISO(), base:payload.data};
+                fs.writeFile(dest + '/base.json', JSON.stringify(fileData), err => {
                     if (err) {
                         console.error(err)
                         return
@@ -204,11 +302,11 @@ app.listen(8080, () => {
 });
 
 function getSystemSlotDetails(data) {
-    console.debug("Parsing details of: " + data);
+    console.debug("Parsing details");
     let res = {"habitable_planet":{planets:0, slots:0, prod:0, tech:0, appeal:0}, "sterile_planet":{planets:0, slots:0, prod:0, tech:0, appeal:0}, "others":{slots:0, prod:0, tech:0, appeal:0}};
 
     Object.values(data).forEach(val => {
-        console.debug("Parsing orbital: " + JSON.stringify(val));
+        // console.debug("Parsing orbital");
         if(val.type === "sterile_planet" || val.type === "habitable_planet") {
             let values = res[val.type];
             values.planets += 1;
@@ -229,6 +327,24 @@ function getSystemSlotDetails(data) {
     });
 
     return res;
+}
+
+function loadImprovedGalaxyHistory(instanceId) {
+    const baseDir = "snapshots/" + instanceId + "/";
+
+    if(fs.existsSync(baseDir + "history.json")) {
+        loadedGalaxies[instanceId] = JSON.parse(fs.readFileSync(baseDir + "history.json", 'utf8'));
+        return loadedGalaxies[instanceId];
+    }
+    else {
+        const data = fs.readFileSync(baseDir + "base.json", 'utf8');
+        const base = JSON.parse(data);
+        console.info("Retrieved base data: " + base);
+
+        loadedGalaxies[instanceId] = {
+            base: base.galaxy, current: false, start: base.start, currentTime: false, snapshots: [], undo: []
+        };
+    }
 }
 
 function loadGalaxyHistory(instanceId) {
