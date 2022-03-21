@@ -56,10 +56,9 @@ function loadImage(name, url, x, y) {
 }
 
 function processData() {
-
     try {
         $.ajax({
-            url: HOSTNAME + DEBUG_FLAGS.DEV_MODE ? "/galaxy/replay/2692" : "/compressed.json",
+            url: HOSTNAME + (DEBUG_FLAGS.DEV_MODE ? "/galaxy/replay/2703" : "/compressed.json"),
             success: function( result ) {
                 galaxyHistory = result;
 
@@ -68,9 +67,8 @@ function processData() {
                         a = a.time;
                         b = b.time;
                         console.debug("parsing: " + a + " " + b);
-                        a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H-m");
-                        console.debug(a.toLocaleString());
-                        b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H-m");
+                        a = DateTime.fromISO(a.time);
+                        b = DateTime.fromISO(b.time);
 
                         return a < b ? -1 : 1;
                     }
@@ -80,7 +78,10 @@ function processData() {
                     }
                 });
 
-                galaxy = structuredClone(galaxyHistory.base);
+                galaxy = galaxyHistory.current;
+
+                // The "current" from galaxyHistory is the last known state of the galaxy
+                historyAnimIndex = galaxyHistory.snapshots.length - 1;
 
                 Object.keys(galaxy.stellar_systems).forEach(ind => {
                     let sys = galaxy.stellar_systems[ind];
@@ -206,27 +207,27 @@ function animateHistory(repeat = true) {
         return;
     }
 
-    const snap = galaxyHistory.snapshots[historyAnimIndex].data;
-    console.debug("Sectors flipping: " + snap.sectors.length);
-    console.debug(JSON.stringify(snap.sectors));
-    Object.keys(snap.sectors).forEach(ind => {
-        let sec = snap.sectors[ind];
+    let systemLog = $("#systemlog");
+    linesWritten = 0;
+    const snap = galaxyHistory.snapshots[historyAnimIndex];
+
+    if(snap.type === "sector") {
+        console.debug("Sector flipping");
+        console.debug(JSON.stringify(snap));
+        let sec = snap;
         let id = sec.id;
         console.debug(JSON.stringify(sec));
         console.debug("Sector flipped: " + sec.name + " to " + sec.owner);
 
         galaxy.sectors[id].owner = sec.owner;
         galaxy.sectors[id].division = sec.division;
-    });
-
-    let systemLog = $("#systemlog");
-    linesWritten = 0;
-    Object.keys(snap.stellar_systems).forEach(ind => {
-        let sys = snap.stellar_systems[ind];
+    }
+    else if(snap.type === "system" || snap.class) {
+        let sys = snap
         let id = sys.id;
         let galaxyIndex = systemData[id].index;
 
-        takenSystems[id] = {startTime:Date.now(), s:sys, radius:2 + zoomLevel * 0.15, dir:0.1};
+        takenSystems[id] = {startTime: Date.now(), s: sys, radius: 2 + zoomLevel * 0.15, dir: 0.1};
         let prev = galaxy.stellar_systems[galaxyIndex];
         linesWritten++;
 
@@ -234,8 +235,7 @@ function animateHistory(repeat = true) {
             systemLog.prepend(
                 wrapTextInFaction(prev.owner, prev.faction) + " abandoned " + systemData[id].name + "<br />"
             );
-        }
-        else if(prev.owner === null)
+        } else if(prev.owner === null)
             systemLog.prepend(
                 wrapTextInFaction(sys.owner, sys.faction) + " colonized " + systemData[id].name + "<br />"
             );
@@ -248,7 +248,10 @@ function animateHistory(repeat = true) {
         prev.owner = sys.owner;
         prev.faction = sys.faction;
         prev.status = sys.status;
-    });
+    }
+    else {
+        console.error("Unknown update type?");
+    }
 
     let time = getCurrentSnapTime();
     systemLog.prepend(" ~~~ " + time[0] + " " + time[1] + ":00" + " ~~~ <br />");

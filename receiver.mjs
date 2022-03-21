@@ -8,6 +8,8 @@ import structuredClone from 'realistic-structured-clone';
 import favicon from "serve-favicon";
 
 const app = express();
+
+// This needs to be first, before any other routes/middleware are defined
 app.use(favicon('public/favicon/favicon.ico'));
 
 let creds;
@@ -15,39 +17,39 @@ let systemDocId;
 let personalDoc;
 const loadedGalaxies = {};
 
-try {
-    console.info("Loading credentials for GCP");
-    creds = JSON.parse(fs.readFileSync('secrets/uploader.json', 'utf8'));
+// try {
+//     console.info("Loading credentials for GCP");
+//     creds = JSON.parse(fs.readFileSync('secrets/uploader.json', 'utf8'));
+//
+//     console.info("Reading configuration data");
+//     let config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+//     console.debug("Config loaded: " + JSON.stringify(config));
+//     systemDocId = config.system;
+//     personalDoc = config.personal;
+// } catch (err) {
+//     console.error(err);
+//     process.exit(1);
+// }
 
-    console.info("Reading configuration data");
-    let config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-    console.debug("Config loaded: " + JSON.stringify(config));
-    systemDocId = config.system;
-    personalDoc = config.personal;
-} catch (err) {
-    console.error(err);
-    process.exit(1);
-}
-
-const systemSheet = (await loadGoogleSheet(systemDocId)).sheetsByIndex[0];
-const personalSheet = (await loadGoogleSheet(personalDoc)).sheetsByIndex[0];
+// const systemSheet = (await loadGoogleSheet(systemDocId)).sheetsByIndex[0];
+// const personalSheet = (await loadGoogleSheet(personalDoc)).sheetsByIndex[0];
 
 // My data
 let sectors = null;
 const knownSystems = new Set();
 
-await systemSheet.loadHeaderRow(7);
-let curRows = await systemSheet.getRows();
-await personalSheet.loadCells('B2:D3');
-console.info("Data loaded from sheets");
+// await systemSheet.loadHeaderRow(7);
+// let curRows = await systemSheet.getRows();
+// await personalSheet.loadCells('B2:D3');
+// console.info("Data loaded from sheets");
 
-Object.values(curRows).forEach(val => {
-    const name = val.Name;
-    if(name && name.length > 0) {
-        // console.debug(name);
-        knownSystems.add(name.toLowerCase());
-    }
-});
+// Object.values(curRows).forEach(val => {
+//     const name = val.Name;
+//     if(name && name.length > 0) {
+//         // console.debug(name);
+//         knownSystems.add(name.toLowerCase());
+//     }
+// });
 
 app.use(express.static('public/images'));
 app.use(express.static('src'));
@@ -73,14 +75,25 @@ app.get("/galaxy/:gameId", cors(), (req, res) => {
 
 // Retrieve the entire snapshot and galactic data for a given game by ID
 app.get('/galaxy/replay/:gameId', cors(), (req, res) => {
-    res.setHeader("Content-Type", "application/json");
-    console.info("Sending init data");
+    console.info("Sending replay data");
+
+    let instance = parseInt(req.params.gameId, 10);
 
     // sanity check ID
+    if(Number.isInteger(instance) && instance >= 0) {
+        console.info("Processed");
 
-    // check if exists
+        // check if exists
 
-    res.send(loadGalaxyHistory(req.params.gameId));
+        res.setHeader("Content-Type", "application/json");
+        res.send(loadImprovedGalaxyHistory(instance));
+    }
+    else {
+        console.info("Invalid game id. " +
+        instance == null ? "Must not be empty"
+            : !Number.isInteger(instance) ? "Must be a number"
+                : instance < 0 ? "Must be positive" : "Unknown?!?");
+    }
 });
 
 app.post('/debug', (req, res) => {
@@ -121,6 +134,7 @@ app.post('/incr_update', (req, res) => {
             }
             else if(update.global_galaxy_system) {
                 const sys = update.global_galaxy_system;
+                sys.type = "system";
                 const curState = history.current;
                 const storedSys = curState.stellar_systems[sys.id];
                 const prev = curState.stellar_systems[sys.id];
@@ -188,7 +202,7 @@ app.post('/update', (req, res) => {
 
         try {
             let payload = JSON.parse(body);
-            if(payload.type === "selectsystem") {
+            if(payload.type === "selectsystem" && enabled) {
                 console.log("Received selected system. Parsing...");
                 let data = payload.data;
                 if(knownSystems.has(data.name)) {
@@ -219,7 +233,7 @@ app.post('/update', (req, res) => {
                 console.debug("Got sector data");
                 sectors = payload.data;
             }
-            else if(payload.type === "player") {
+            else if(payload.type === "player" && enabled) {
                 let data = payload.data;
                 console.debug("Received Player data: " + JSON.stringify(data));
                 personalSheet.getCellByA1("B2").value = data.credits;
