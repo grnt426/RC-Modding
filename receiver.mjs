@@ -96,8 +96,8 @@ app.post('/debug', (req, res) => {
 });
 
 /**
- * This route assumes no other calls to this API can be made until a currently executing call are finished. This is
- * desireable because each time this API is called, we save the large snapshot history to disk and order is preserved.
+ * This route assumes no other calls to this API can be made until a currently executing call is finished. This is
+ * desirable because each time this API is called, we save the large snapshot history to disk and order is preserved.
  * If multiple calls could execute simultaneously, they could cause non-atomic updates.
  *
  * This is called out explicitly for the eventual future these APIs are made more performant through async handlers.
