@@ -1987,7 +1987,7 @@
 
                                             if(y.a.state.game.player !== undefined && y.a.state.game.player !== null && y.a.state.game.player.account_id != null) {
 
-                                                if(granite.snapshotTime) {
+                                                if(false) {
 
                                                     // 5 mins in milliseconds = 5 mins * 60 seconds * 1000 milliseconds
                                                     if(Date.now() - granite.snapshotTime > 60 * 1010) {

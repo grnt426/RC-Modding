@@ -254,7 +254,7 @@ function animateHistory(repeat = true) {
     }
 
     let time = getCurrentSnapTime();
-    systemLog.prepend(" ~~~ " + time[0] + " " + time[1] + ":00" + " ~~~ <br />");
+    systemLog.prepend(" ~~~ " + time + " ~~~ <br />");
     linesWritten++;
 
     update = true;
@@ -350,10 +350,10 @@ function renderer() {
         // context.fill();
 
         // this is SUPER lazy
-        let comps = getCurrentSnapTime();
+        let timestamp = getCurrentSnapTime();
         context.font = '30px sans-serif';
         context.fillStyle = 'rgb(126,126,126)';
-        context.fillText(comps[0] + " " + comps[1] + ":00", canvas.width - 250, canvas.height - 20);
+        context.fillText(timestamp, canvas.width - 250, canvas.height - 20);
 
         // Draw Buttons
         // context.drawImage(IMAGES.prev.i, 15, canvas.height - 65);
@@ -366,7 +366,7 @@ function renderer() {
 
 function getCurrentSnapTime() {
     let time = galaxyHistory.snapshots[historyAnimIndex] === undefined ? galaxyHistory.snapshots[historyAnimIndex-1].time : galaxyHistory.snapshots[historyAnimIndex].time;
-    return time.split("T");
+    return DateTime.fromISO(time).toLocal().toLocaleString();
 }
 
 function wrapTextInFaction(text, faction) {
