@@ -113,7 +113,8 @@ app.post('/debug', (req, res) => {
  * desirable because each time this API is called, we save the large snapshot history to disk and order is preserved.
  * If multiple calls could execute simultaneously, they could cause non-atomic updates.
  *
- * This is called out explicitly for the eventual future these APIs are made more performant through async handlers.
+ * This is called out explicitly for the eventual future these APIs are made more performant through async handlers or
+ * threaded.
  */
 app.post('/incr_update', (req, res) => {
     var body = '';
@@ -127,52 +128,21 @@ app.post('/incr_update', (req, res) => {
             const payload = JSON.parse(body);
             const update = payload.data;
             const instance = payload.instance;
-            const history = !loadedGalaxies[instance] ? loadImprovedGalaxyHistory(instance) : loadedGalaxies[instance];
+            const history = fetchHistory(instance);
 
-            if(update.global_character_market || update.global_victory || update.global_galaxy_sector) {
+            if(update.global_character_market || update.global_victory
+                    || update.player_player || update.detected_objects) {
 
             }
             else if(update.global_galaxy_system) {
+                console.info("Got a system update.");
                 const sys = update.global_galaxy_system;
-                sys.type = "system";
-                const curState = history.current;
-                const storedSys = curState.stellar_systems[sys.id];
-                const prev = curState.stellar_systems[sys.id];
-
-                if(prev.owner !== sys.owner) {
-
-                    // Create a snapshot that allows us to undo this step
-                    const u = structuredClone(sys);
-                    delete u.position;
-                    delete u.score;
-                    delete u.receivedAt;
-                    u.owner = storedSys.owner;
-                    u.faction = storedSys.faction;
-                    u.time = history.currentTime;
-
-                    // Clean up the current snapshot
-                    sys.time = DateTime.now().toISO();
-                    delete sys.position;
-                    delete sys.score;
-                    delete sys.receivedAt;
-
-                    // Build the forwards/backwards snapshots
-                    history.undo.push(u);
-                    history.snapshots.push(sys);
-
-                    // Update the stored current state of the galaxy
-                    storedSys.owner = sys.owner;
-                    storedSys.faction = sys.faction;
-                    storedSys.status = sys.status;
-                    history.currentTime = sys.time;
-
-                    // Finally save to disk
-                    fs.writeFileSync("snapshots/" + instance + "/history.json", JSON.stringify(history), err => {
-                        if (err) {
-                            console.error("FAILED TO SAVE HISTORY UPDATE: " + err);
-                        }
-                    });
-                }
+                applySystemUpdate(sys, history);
+            }
+            else if(update.global_galaxy_sector) {
+                console.info("Got a sector update.");
+                const sectors = update.global_galaxy_sector;
+                applySectorUpdate(sectors, history);
             }
             else {
                 console.debug(body);
@@ -202,7 +172,7 @@ app.post('/update', (req, res) => {
 
         try {
             let payload = JSON.parse(body);
-            if(payload.type === "selectsystem" && enabled) {
+            if(payload.type === "selectsystem" && false) {
                 console.log("Received selected system. Parsing...");
                 let data = payload.data;
                 if(knownSystems.has(data.name)) {
@@ -275,6 +245,10 @@ app.post('/update', (req, res) => {
             else if(payload.type === "galaxy_snapshot") {
                 console.info("Received galaxy snapshot");
                 let snap = payload.data;
+                // console.info(payload);
+
+                applyUpdatesFromGameResume(snap, fetchHistory(payload.instance));
+
                 Object.values(snap.sectors).forEach( s => {
                     delete s.adjacent;
                     delete s.centroid;
@@ -314,6 +288,109 @@ app.post('/update', (req, res) => {
 app.listen(8080, () => {
     console.info("Server started");
 });
+
+function fetchHistory(instance) {
+    try {
+        return !loadedGalaxies[instance] ? loadImprovedGalaxyHistory(instance) : loadedGalaxies[instance];
+    }
+    catch (err) {
+        console.info("Failed to load history for " + instance);
+        return null;
+    }
+}
+
+function applyUpdatesFromGameResume(currentGalaxy, history) {
+    Object.values(currentGalaxy.stellar_systems).forEach(s => {
+        s.unknownTime = true;
+        applySystemUpdate(s, history);
+    });
+    applySectorUpdate(currentGalaxy.sectors, history);
+}
+
+function applySectorUpdate(sectors, history) {
+    sectors.forEach(sec => {
+        let id = sec.id;
+        let curr = getById(history.current.sectors, id);
+        if(curr.owner !== sec.owner) {
+            sec.type = "sector";
+            delete sec.adjacent;
+            delete sec.centroid;
+            delete sec.points;
+
+            const u = structuredClone(curr);
+            u.time = history.currentTime;
+
+            history.snapshots.push(sec);
+            history.undo.push(u);
+
+            curr.owner = sec.owner;
+            curr.division = sec.division;
+
+            saveInstanceToDisk(history);
+        }
+    });
+}
+
+function getById(list, id) {
+    let res = null;
+    list.forEach(e => {
+        if(e.id === id)
+            res = e;
+    });
+
+    return res;
+}
+
+function applySystemUpdate(sys, history) {
+    sys.type = "system";
+    const curState = history.current;
+    const storedSys = getById(curState.stellar_systems, sys.id);
+
+    if(storedSys === null) {
+        console.info("ERROR: null system??? ID: " + sys.id);
+    }
+
+    if(storedSys.owner !== sys.owner) {
+
+        // Create a snapshot that allows us to undo this step
+        const u = structuredClone(storedSys);
+        delete u.position;
+        delete u.score;
+        delete u.receivedAt;
+        u.time = history.currentTime;
+
+        // Clean up the current snapshot
+        sys.time = DateTime.now().toISO();
+        delete sys.position;
+        delete sys.score;
+        delete sys.receivedAt;
+
+        // Build the forwards/backwards snapshots
+        history.undo.push(u);
+        history.snapshots.push(sys);
+
+        // Update the stored current state of the galaxy
+        storedSys.owner = sys.owner;
+        storedSys.faction = sys.faction;
+        storedSys.status = sys.status;
+        history.currentTime = sys.time;
+
+        saveInstanceToDisk(history);
+    }
+}
+
+function saveInstanceToDisk(history) {
+    if(history) {
+        fs.writeFileSync("snapshots/" + history.instance + "/history.json", JSON.stringify(history), err => {
+            if(err) {
+                console.error("FAILED TO SAVE HISTORY UPDATE: " + err);
+            }
+        });
+    }
+    else {
+        console.info("Where is the history");``
+    }
+}
 
 function getSystemSlotDetails(data) {
     console.debug("Parsing details");
