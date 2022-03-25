@@ -69,7 +69,8 @@ app.get("/galaxy/:gameId", cors(), (req, res) => {
         haveBase = fs.existsSync("snapshots/" + gameId + "/base.json");
     }
 
-    res.send(haveBase);
+    res.writeHead(200, {"Content-Type": "application/json"});
+    res.end(haveBase + "");
 });
 
 
@@ -84,15 +85,23 @@ app.get('/galaxy/replay/:gameId', cors(), (req, res) => {
         console.info("Processed");
 
         // check if exists
-
-        res.setHeader("Content-Type", "application/json");
-        res.send(loadImprovedGalaxyHistory(instance));
+        if(fs.existsSync("snapshots/" + instance + "/history.json")) {
+            res.writeHead(200, {"Content-Type": "application/json"});
+            res.end(loadImprovedGalaxyHistory(instance));
+        }
+        else {
+            res.writeHead(404, {'Content-Type': 'text/html'});
+            res.end("Does not exist");
+        }
     }
     else {
-        console.info("Invalid game id. " +
+        let err = "Invalid game id. " +
         instance == null ? "Must not be empty"
             : !Number.isInteger(instance) ? "Must be a number"
-                : instance < 0 ? "Must be positive" : "Unknown?!?");
+                : instance < 0 ? "Must be positive" : "Unknown?!?";
+        console.info(err);
+        res.writeHead(400, {'Content-Type': 'text/html'});
+        res.end(err);
     }
 });
 
@@ -226,6 +235,7 @@ app.post('/update', (req, res) => {
                     current:structuredClone(payload.data), snapshots: [], undo: [], instance:payload.instance,
                     currentTime:DateTime.now().toISO()
                 }
+
                 fs.writeFile(dest + "/history.json", JSON.stringify(historyData), err => {
                     if (err) {
                         console.error(err)
