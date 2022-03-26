@@ -259,11 +259,16 @@ app.post('/update', (req, res) => {
 
                 applyUpdatesFromGameResume(snap, fetchHistory(payload.instance));
 
-                Object.values(snap.sectors).forEach( s => {
-                    delete s.adjacent;
-                    delete s.centroid;
-                    delete s.points;
-                });
+                if(snap.sectors) {
+                    Object.values(snap.sectors).forEach(s => {
+                        delete s.adjacent;
+                        delete s.centroid;
+                        delete s.points;
+                    });
+                }
+                else {
+                    console.info("WARN no sectors found?");
+                }
                 Object.values(snap.stellar_systems).forEach( s => {
                     delete s.class;
                     delete s.name;
@@ -279,7 +284,7 @@ app.post('/update', (req, res) => {
                 fs.writeFile(filename, JSON.stringify(snap), err => {
                     if (err) {
                         console.error(err)
-                        return
+                        return;
                     }
                     //file written successfully
                 });
@@ -289,7 +294,7 @@ app.post('/update', (req, res) => {
             }
         }
         catch (err) {
-
+            console.info("ERROR: " + err);
         }
     });
     // console.log("Received something!");
@@ -318,6 +323,9 @@ function applyUpdatesFromGameResume(currentGalaxy, history) {
 }
 
 function applySectorUpdate(sectors, history) {
+    if(!sectors)
+        return;
+
     sectors.forEach(sec => {
         let id = sec.id;
         let curr = getById(history.current.sectors, id);
