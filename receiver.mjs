@@ -37,17 +37,19 @@ const loadedGalaxies = {};
 // My data
 let sectors = null;
 const knownSystems = new Set();
+const sectorIdToName = {};
 
 // await systemSheet.loadHeaderRow(7);
 // let curRows = await systemSheet.getRows();
 // await personalSheet.loadCells('B2:D3');
 // console.info("Data loaded from sheets");
-
+//
 // Object.values(curRows).forEach(val => {
 //     const name = val.Name;
-//     if(name && name.length > 0) {
+//     const sector = val.Sector;
+//     if(name && name.length > 0 && sector && sector.length > 0) {
 //         // console.debug(name);
-//         knownSystems.add(name.toLowerCase());
+//         knownSystems.add(name.toLowerCase() + ":" + sector);
 //     }
 // });
 
@@ -82,16 +84,17 @@ app.get('/galaxy/replay/:gameId', cors(), (req, res) => {
 
     // sanity check ID
     if(Number.isInteger(instance) && instance >= 0) {
-        console.info("Processed");
+        console.info("Processed instance " + instance);
 
         // check if exists
         if(fs.existsSync("snapshots/" + instance + "/history.json")) {
-            res.writeHead(200, {"Content-Type": "application/json"});
-            res.end(loadImprovedGalaxyHistory(instance));
+            res.status(200);
+            res.header("Content-Type", "application/json");
+            res.send(fetchHistory(instance));
         }
         else {
-            res.writeHead(404, {'Content-Type': 'text/html'});
-            res.end("Does not exist");
+            res.status(404);
+            res.send("Does not exist");
         }
     }
     else {
@@ -100,8 +103,8 @@ app.get('/galaxy/replay/:gameId', cors(), (req, res) => {
             : !Number.isInteger(instance) ? "Must be a number"
                 : instance < 0 ? "Must be positive" : "Unknown?!?";
         console.info(err);
-        res.writeHead(400, {'Content-Type': 'text/html'});
-        res.end(err);
+        res.status(400);
+        res.send(err);
     }
 });
 
@@ -211,6 +214,10 @@ app.post('/update', (req, res) => {
                 }
                 console.debug("Got sector data");
                 sectors = payload.data;
+
+                sectors.forEach(sec => {
+                    sectorIdToName[sec.id] = sec.name;
+                });
             }
             else if(payload.type === "player" && enabled) {
                 let data = payload.data;
@@ -331,6 +338,7 @@ function applySectorUpdate(sectors, history) {
         let curr = getById(history.current.sectors, id);
         if(curr.owner !== sec.owner) {
             sec.type = "sector";
+            sec.time = DateTime.now().toISO();
             delete sec.adjacent;
             delete sec.centroid;
             delete sec.points;
@@ -366,9 +374,10 @@ function applySystemUpdate(sys, history) {
 
     if(storedSys === null) {
         console.info("ERROR: null system??? ID: " + sys.id);
+        return;
     }
 
-    if(storedSys.owner !== sys.owner) {
+    if(storedSys.owner !== sys.owner || storedSys.status !== sys.status) {
 
         // Create a snapshot that allows us to undo this step
         const u = structuredClone(storedSys);
@@ -443,6 +452,28 @@ function loadImprovedGalaxyHistory(instanceId) {
 
     if(fs.existsSync(baseDir + "history.json")) {
         loadedGalaxies[instanceId] = JSON.parse(fs.readFileSync(baseDir + "history.json", 'utf8'));
+
+        let madeCorrections = false;
+        loadedGalaxies[instanceId].snapshots.forEach( s => {
+            if(!s.type) {
+                console.info(s.name + " has missing type: " + JSON.stringify(s));
+
+                // This is a system with a missing name and type. Not sure why, but we can recover the information
+                if(s.status) {
+                    let sys = getById(loadedGalaxies[instanceId].base.stellar_systems, s.id);
+                    if(sys) {
+                        s["name"] = sys.name;
+                        s["type"] = "system";
+                        madeCorrections = true;
+                    }
+                }
+            }
+        });
+
+        if(madeCorrections) {
+            saveInstanceToDisk(loadedGalaxies[instanceId]);
+        }
+
         return loadedGalaxies[instanceId];
     }
     else {

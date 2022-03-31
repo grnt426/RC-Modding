@@ -40,6 +40,7 @@ let resetAnims = false;
 let animTimer;
 let historyAnimIndex = 0;
 let linesWritten = 0;
+let prevTime = false;
 
 const IMAGES = {
 
@@ -58,7 +59,7 @@ function loadImage(name, url, x, y) {
 function processData() {
     try {
         $.ajax({
-            url: HOSTNAME + (DEBUG_FLAGS.DEV_MODE ? "/galaxy/replay/2703" : "/compressed.json"),
+            url: HOSTNAME + (DEBUG_FLAGS.DEV_MODE ? "/galaxy/replay/2713" : "/compressed.json"),
             success: function( result ) {
                 galaxyHistory = result;
 
@@ -67,13 +68,13 @@ function processData() {
                         a = a.time;
                         b = b.time;
                         console.debug("parsing: " + a + " " + b);
-                        a = DateTime.fromISO(a.time);
-                        b = DateTime.fromISO(b.time);
+                        a = DateTime.fromISO(a);
+                        b = DateTime.fromISO(b);
 
-                        return a < b ? -1 : 1;
+                        return a.ts < b.ts ? -1 : 1;
                     }
                     catch(err) {
-                        console.error("failed to parse");
+                        console.error("failed to parse: " + a + " || " + b);
                         return -1;
                     }
                 });
@@ -210,6 +211,16 @@ function animateHistory(repeat = true) {
     let systemLog = $("#systemlog");
     linesWritten = 0;
     const snap = galaxyHistory.snapshots[historyAnimIndex];
+    let time = getCurrentSnapTime();
+
+    let contentsOfLog = systemLog.html();
+    if(contentsOfLog.length > 3 && prevTime === time) {
+        let index = contentsOfLog.indexOf(" ~~~", 3) + 9;
+        systemLog.html(contentsOfLog.substring(index));
+    }
+    else {
+        prevTime = time;
+    }
 
     if(snap.type === "sector") {
         console.debug("Sector flipping");
@@ -253,8 +264,8 @@ function animateHistory(repeat = true) {
         console.error("Unknown update type?");
     }
 
-    let time = getCurrentSnapTime();
     systemLog.prepend(" ~~~ " + time + " ~~~ <br />");
+
     linesWritten++;
 
     update = true;
