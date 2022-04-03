@@ -6,6 +6,7 @@ const {Console} = console;
 import {DateTime} from "luxon";
 import structuredClone from 'realistic-structured-clone';
 import favicon from "serve-favicon";
+import Player from "./src/js/Player.mjs";
 
 const app = express();
 
@@ -17,33 +18,34 @@ let systemDocId;
 let personalDoc;
 const loadedGalaxies = {};
 
-// try {
-//     console.info("Loading credentials for GCP");
-//     creds = JSON.parse(fs.readFileSync('secrets/uploader.json', 'utf8'));
-//
-//     console.info("Reading configuration data");
-//     let config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
-//     console.debug("Config loaded: " + JSON.stringify(config));
-//     systemDocId = config.system;
-//     personalDoc = config.personal;
-// } catch (err) {
-//     console.error(err);
-//     process.exit(1);
-// }
+try {
+    console.info("Loading credentials for GCP");
+    creds = JSON.parse(fs.readFileSync('secrets/uploader.json', 'utf8'));
+
+    console.info("Reading configuration data");
+    let config = JSON.parse(fs.readFileSync("config.json", 'utf8'));
+    console.debug("Config loaded: " + JSON.stringify(config));
+    systemDocId = config.system;
+    personalDoc = config.personal;
+} catch (err) {
+    console.error(err);
+    process.exit(1);
+}
 
 // const systemSheet = (await loadGoogleSheet(systemDocId)).sheetsByIndex[0];
-// const personalSheet = (await loadGoogleSheet(personalDoc)).sheetsByIndex[0];
+const personalSheet = (await loadGoogleSheet(personalDoc)).sheetsByIndex[0];
 
 // My data
 let sectors = null;
 const knownSystems = new Set();
 const sectorIdToName = {};
+let players = [];
 
 // await systemSheet.loadHeaderRow(7);
 // let curRows = await systemSheet.getRows();
-// await personalSheet.loadCells('B2:D3');
-// console.info("Data loaded from sheets");
-//
+await personalSheet.loadCells('B2:D3');
+console.info("Data loaded from sheets");
+
 // Object.values(curRows).forEach(val => {
 //     const name = val.Name;
 //     const sector = val.Sector;
@@ -143,7 +145,28 @@ app.post('/incr_update', (req, res) => {
             const history = fetchHistory(instance);
 
             if(update.global_character_market || update.global_victory
-                    || update.player_player || update.detected_objects) {
+                    || update.detected_objects || update.faction_faction) {
+
+            }
+            else if(update.player_player) {
+                let d = update.player_player;
+                console.info("Got a player update.");
+
+                let p = players[instance];
+                if(!p) {
+                    p = new Player(instance, DateTime.now().toSeconds());
+                    players[instance] = p;
+                }
+
+                p.updateCredit(d.credit);
+                p.updateIdeo(d.ideology);
+                p.updateTech(d.technology);
+
+                // console.debug(update.player_player);
+                // console.debug(Object.keys(update.player_player));
+                // console.debug(d.credit);
+                // console.debug(d.ideology);
+                // console.debug(d.technology);
 
             }
             else if(update.global_galaxy_system) {
@@ -219,7 +242,9 @@ app.post('/update', (req, res) => {
                     sectorIdToName[sec.id] = sec.name;
                 });
             }
-            else if(payload.type === "player" && enabled) {
+
+            // DEPRECATED
+            else if(payload.type === "player" && false) {
                 let data = payload.data;
                 console.debug("Received Player data: " + JSON.stringify(data));
                 personalSheet.getCellByA1("B2").value = data.credits;
@@ -307,9 +332,43 @@ app.post('/update', (req, res) => {
     // console.log("Received something!");
 });
 
-app.listen(8080, () => {
+const server = app.listen(8080, () => {
     console.info("Server started");
 });
+
+// handle shutdowns gracefully
+process.on('SIGTERM', () => {
+    console.log('!!! Shutting Down !!!');
+    server.close(() => {
+        process.exit(0);
+    });
+});
+
+setInterval(estimateIncomeValues, 10_000);
+
+function estimateIncomeValues() {
+    try {
+        players.forEach(p => {
+            p.calcResourceTotals(DateTime.now().toSeconds());
+            if(p.gameInstanceId === 2713) {
+                personalSheet.getCellByA1("B2").value = p.resources.cred.value;
+                personalSheet.getCellByA1("C2").value = p.resources.tech.value;
+                personalSheet.getCellByA1("D2").value = p.resources.ideo.value;
+                personalSheet.getCellByA1("B3").value = p.resources.cred.change;
+                personalSheet.getCellByA1("C3").value = p.resources.cred.change;
+                personalSheet.getCellByA1("D3").value = p.resources.cred.change;
+                personalSheet.saveUpdatedCells().then(r => {
+                    if(r) {
+                        console.error("Response from Sheets after saving player income: " + r);
+                    }
+                });
+            }
+        });
+    }
+    catch(err) {
+        console.error("Failed to calculate player income" + err);
+    }
+}
 
 function fetchHistory(instance) {
     try {
@@ -453,24 +512,37 @@ function loadImprovedGalaxyHistory(instanceId) {
     if(fs.existsSync(baseDir + "history.json")) {
         loadedGalaxies[instanceId] = JSON.parse(fs.readFileSync(baseDir + "history.json", 'utf8'));
 
+        // Not sure why some updates are missing information.
         let madeCorrections = false;
         loadedGalaxies[instanceId].snapshots.forEach( s => {
-            if(!s.type) {
-                console.info(s.name + " has missing type: " + JSON.stringify(s));
+            // if(!s.type) {
+            //     console.info(s.name + " has missing type: " + JSON.stringify(s));
+            //
+            //     // This is a system with a missing name and type. Not sure why, but we can recover the information
+            //     if(s.status) {
+            //         let sys = getById(loadedGalaxies[instanceId].base.stellar_systems, s.id);
+            //         if(sys) {
+            //             s["name"] = sys.name;
+            //             s["type"] = "system";
+            //             madeCorrections = true;
+            //         }
+            //     }
+            // }
 
-                // This is a system with a missing name and type. Not sure why, but we can recover the information
-                if(s.status) {
-                    let sys = getById(loadedGalaxies[instanceId].base.stellar_systems, s.id);
-                    if(sys) {
-                        s["name"] = sys.name;
-                        s["type"] = "system";
-                        madeCorrections = true;
-                    }
-                }
-            }
+            // In some updates at the start we didn't apply time to sectors, so here we derive it from the undo history
+            // else if(s.type === "sector" && !s.time) {
+            //     let name = s.name;
+            //     loadedGalaxies[instanceId].undo.forEach(u => {
+            //         if(u.centroid && u.name === name) {
+            //             s.time = u.time;
+            //             madeCorrections = true;
+            //         }
+            //     });
+            // }
         });
 
         if(madeCorrections) {
+            console.info("Made corrections to history");
             saveInstanceToDisk(loadedGalaxies[instanceId]);
         }
 

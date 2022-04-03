@@ -46,3 +46,6 @@ I have noticed that some things in code are named differently from what they are
 Copy 19.js into your game's install directory and replace the existing 19.js file. Start the server, receiver.mjs, and
 then start the game. Data will be streamed to the receiver and if you have access to the Google Sheets, data will
 be dumped into them.
+
+# Modifying sheets in Google Sheets
+Give access to rc-receiver-uploader@aerobic-furnace-343101.iam.gserviceaccount.com
