@@ -6,7 +6,9 @@ const {Console} = console;
 import {DateTime} from "luxon";
 import structuredClone from 'realistic-structured-clone';
 import favicon from "serve-favicon";
+
 import Player from "./src/js/Player.mjs";
+import HistoryManager from "./src/js/HistoryManager.mjs";
 
 const app = express();
 
@@ -16,7 +18,8 @@ app.use(favicon('public/favicon/favicon.ico'));
 let creds;
 let systemDocId;
 let personalDoc;
-const loadedGalaxies = {};
+
+const historyManager = new HistoryManager("snapshots/");
 
 try {
     console.info("Loading credentials for GCP");
@@ -92,7 +95,7 @@ app.get('/galaxy/replay/:gameId', cors(), (req, res) => {
         if(fs.existsSync("snapshots/" + instance + "/history.json")) {
             res.status(200);
             res.header("Content-Type", "application/json");
-            res.send(fetchHistory(instance));
+            res.send(historyManager.getHistory(instance));
         }
         else {
             res.status(404);
@@ -142,7 +145,6 @@ app.post('/incr_update', (req, res) => {
             const payload = JSON.parse(body);
             const update = payload.data;
             const instance = payload.instance;
-            const history = fetchHistory(instance);
 
             if(update.global_character_market || update.global_victory
                     || update.detected_objects || update.faction_faction) {
@@ -152,23 +154,16 @@ app.post('/incr_update', (req, res) => {
                 let d = update.player_player;
                 console.info("Got a player update.");
                 updatePlayerData(instance, d);
-
-                // console.debug(update.player_player);
-                // console.debug(Object.keys(update.player_player));
-                // console.debug(d.credit);
-                // console.debug(d.ideology);
-                // console.debug(d.technology);
-
             }
             else if(update.global_galaxy_system) {
                 console.info("Got a system update.");
                 const sys = update.global_galaxy_system;
-                applySystemUpdate(sys, history);
+                historyManager.applySystemUpdate(sys, instance);
             }
             else if(update.global_galaxy_sector) {
                 console.info("Got a sector update.");
                 const sectors = update.global_galaxy_sector;
-                applySectorUpdate(sectors, history);
+                historyManager.applySectorsUpdate(sectors, instance);
             }
             else {
                 console.debug(body);
@@ -240,22 +235,7 @@ app.post('/update', (req, res) => {
             }
             else if(payload.type === "galaxy") {
                 console.info("Received galaxy");
-                let dest = 'snapshots/' + payload.instance;
-                console.info("\tWriting Galaxy data to: " + dest);
-                // console.info("\tData: " + payload.data);
-
-                // NEW HISTORY FORMAT TYPE
-                const historyData = {
-                    start:DateTime.now().toISO(), base:payload.data,
-                    current:structuredClone(payload.data), snapshots: [], undo: [], instance:payload.instance,
-                    currentTime:DateTime.now().toISO()
-                }
-
-                fs.writeFile(dest + "/history.json", JSON.stringify(historyData), err => {
-                    if (err) {
-                        console.error(err)
-                    }
-                });
+                historyManager.processNewInstance(payload);
 
                 // OLD SNAPSHOT FORMAT TYPE
                 const fileData = {start:(DateTime.now()).toISO(), base:payload.data};
@@ -272,7 +252,7 @@ app.post('/update', (req, res) => {
                 let snap = payload.data;
                 // console.info(payload);
 
-                applyUpdatesFromGameResume(snap, fetchHistory(payload.instance));
+                applyUpdatesFromGameResume(snap, historyManager.getHistory(payload.instance));
 
                 if(snap.sectors) {
                     Object.values(snap.sectors).forEach(s => {
@@ -374,112 +354,12 @@ function updateIncomeSheets(player) {
     });
 }
 
-function fetchHistory(instance) {
-    try {
-        return !loadedGalaxies[instance] ? loadImprovedGalaxyHistory(instance) : loadedGalaxies[instance];
-    }
-    catch (err) {
-        console.info("Failed to load history for " + instance);
-        return null;
-    }
-}
-
 function applyUpdatesFromGameResume(currentGalaxy, history) {
     Object.values(currentGalaxy.stellar_systems).forEach(s => {
         s.unknownTime = true;
-        applySystemUpdate(s, history);
+        historyManager.applySystemUpdate(s, history.instance);
     });
-    applySectorUpdate(currentGalaxy.sectors, history);
-}
-
-function applySectorUpdate(sectors, history) {
-    if(!sectors)
-        return;
-
-    sectors.forEach(sec => {
-        let id = sec.id;
-        let curr = getById(history.current.sectors, id);
-        if(curr.owner !== sec.owner) {
-            sec.type = "sector";
-            sec.time = DateTime.now().toISO();
-            delete sec.adjacent;
-            delete sec.centroid;
-            delete sec.points;
-
-            const u = structuredClone(curr);
-            u.time = history.currentTime;
-
-            history.snapshots.push(sec);
-            history.undo.push(u);
-
-            curr.owner = sec.owner;
-            curr.division = sec.division;
-
-            saveInstanceToDisk(history);
-        }
-    });
-}
-
-function getById(list, id) {
-    let res = null;
-    list.forEach(e => {
-        if(e.id === id)
-            res = e;
-    });
-
-    return res;
-}
-
-function applySystemUpdate(sys, history) {
-    sys.type = "system";
-    const curState = history.current;
-    const storedSys = getById(curState.stellar_systems, sys.id);
-
-    if(storedSys === null) {
-        console.info("ERROR: null system??? ID: " + sys.id);
-        return;
-    }
-
-    if(storedSys.owner !== sys.owner || storedSys.status !== sys.status) {
-
-        // Create a snapshot that allows us to undo this step
-        const u = structuredClone(storedSys);
-        delete u.position;
-        delete u.score;
-        delete u.receivedAt;
-        u.time = history.currentTime;
-
-        // Clean up the current snapshot
-        sys.time = DateTime.now().toISO();
-        delete sys.position;
-        delete sys.score;
-        delete sys.receivedAt;
-
-        // Build the forwards/backwards snapshots
-        history.undo.push(u);
-        history.snapshots.push(sys);
-
-        // Update the stored current state of the galaxy
-        storedSys.owner = sys.owner;
-        storedSys.faction = sys.faction;
-        storedSys.status = sys.status;
-        history.currentTime = sys.time;
-
-        saveInstanceToDisk(history);
-    }
-}
-
-function saveInstanceToDisk(history) {
-    if(history) {
-        fs.writeFileSync("snapshots/" + history.instance + "/history.json", JSON.stringify(history), err => {
-            if(err) {
-                console.error("FAILED TO SAVE HISTORY UPDATE: " + err);
-            }
-        });
-    }
-    else {
-        console.info("Where is the history");``
-    }
+    historyManager.applySectorsUpdate(currentGalaxy.sectors, history.instance);
 }
 
 function getSystemSlotDetails(data) {
@@ -508,144 +388,6 @@ function getSystemSlotDetails(data) {
     });
 
     return res;
-}
-
-function loadImprovedGalaxyHistory(instanceId) {
-    const baseDir = "snapshots/" + instanceId + "/";
-
-    if(fs.existsSync(baseDir + "history.json")) {
-        loadedGalaxies[instanceId] = JSON.parse(fs.readFileSync(baseDir + "history.json", 'utf8'));
-
-        // Not sure why some updates are missing information.
-        let madeCorrections = false;
-        loadedGalaxies[instanceId].snapshots.forEach( s => {
-            // if(!s.type) {
-            //     console.info(s.name + " has missing type: " + JSON.stringify(s));
-            //
-            //     // This is a system with a missing name and type. Not sure why, but we can recover the information
-            //     if(s.status) {
-            //         let sys = getById(loadedGalaxies[instanceId].base.stellar_systems, s.id);
-            //         if(sys) {
-            //             s["name"] = sys.name;
-            //             s["type"] = "system";
-            //             madeCorrections = true;
-            //         }
-            //     }
-            // }
-
-            // In some updates at the start we didn't apply time to sectors, so here we derive it from the undo history
-            // else if(s.type === "sector" && !s.time) {
-            //     let name = s.name;
-            //     loadedGalaxies[instanceId].undo.forEach(u => {
-            //         if(u.centroid && u.name === name) {
-            //             s.time = u.time;
-            //             madeCorrections = true;
-            //         }
-            //     });
-            // }
-        });
-
-        if(madeCorrections) {
-            console.info("Made corrections to history");
-            saveInstanceToDisk(loadedGalaxies[instanceId]);
-        }
-
-        return loadedGalaxies[instanceId];
-    }
-    else {
-        const data = fs.readFileSync(baseDir + "base.json", 'utf8');
-        const base = JSON.parse(data);
-        console.info("Retrieved base data: " + base);
-
-        loadedGalaxies[instanceId] = {
-            base: base.galaxy, current: false, start: base.start, currentTime: false, snapshots: [], undo: []
-        };
-    }
-}
-
-function loadGalaxyHistory(instanceId) {
-
-    // we need the base data loaded first before
-    let galaxyHistory = {};
-    const baseDir = "snapshots/" + instanceId + "/";
-    const data = fs.readFileSync(baseDir + "base.json", 'utf8');
-    const base = JSON.parse(data);
-    console.info("Retrieved base data: " + base);
-    galaxyHistory.start = base.start;
-    console.info("Galaxy starts at " + galaxyHistory.start);
-    galaxyHistory.base = base.galaxy;
-    galaxyHistory.snapshots = [];
-
-    let prevState = structuredClone(base.galaxy);
-    console.info("Previous State: " + prevState);
-
-    let files = fs.readdirSync(baseDir);
-
-    files = files.filter(f => {
-        return /state_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{1,2}-[0-9]{1,2}\.json(?!.)/.test(f);
-    });
-
-    files.sort((a, b) => {
-        try {
-            a = a.split("_")[1];
-            a = a.split(".")[0];
-            b = b.split("_")[1];
-            b = b.split(".")[0];
-
-            a = DateTime.fromFormat(a, "yyyy-MM-dd'T'H-m");
-            b = DateTime.fromFormat(b, "yyyy-MM-dd'T'H-m");
-
-            return a < b ? -1 : 1;
-        }
-        catch(err) {
-            console.info("failed to parse");
-            return -1;
-        }
-    });
-
-    files.forEach(function(file) {
-        console.info("File: " + file);
-        const fdata = fs.readFileSync(baseDir + file, 'utf8');
-        try {
-            let time = file.split("_")[1].split(".")[0];
-            let state = JSON.parse(fdata);
-
-            console.info("\tSectors to parse: " + state.sectors);
-
-            state.sectors = state.sectors.filter((val, i, state) => {
-                let p = prevState.sectors[i];
-                if(val.owner !== p.owner) {
-                    prevState.sectors[i] = val;
-                    return true;
-                }
-                return false;
-            });
-            console.info("\tRetained Sectors: " + JSON.stringify(state.sectors));
-
-            state.stellar_systems = state.stellar_systems.filter((val, i, state) => {
-                let p = prevState.stellar_systems[i];
-                if(val.owner !== p.owner) {
-                    prevState.stellar_systems[i] = val;
-                    return true;
-                }
-                return false;
-            });
-            console.info("\tRetained Systems: " + JSON.stringify(state.stellar_systems));
-
-            // only push if not empty
-            if(state.stellar_systems.length !== 0 || state.sectors.length !== 0) {
-                galaxyHistory.snapshots.push({time: time, data: state});
-            }
-            console.info("\tProcessed successfully");
-        }
-        catch(err) {
-            console.info("\tFailed: " + err);
-        }
-    });
-
-    console.info("All done! Result: " + galaxyHistory);
-
-    return galaxyHistory;
 }
 
 async function loadGoogleSheet(id) {

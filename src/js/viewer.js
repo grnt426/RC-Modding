@@ -80,6 +80,7 @@ function processData() {
                 });
 
                 galaxy = galaxyHistory.current;
+                galaxy.players = [];
 
                 // The "current" from galaxyHistory is the last known state of the galaxy
                 historyAnimIndex = galaxyHistory.snapshots.length - 1;
