@@ -11,6 +11,20 @@ export default class HistoryManager {
         this.#rootDir = rootDir;
     }
 
+    hasHistory(instance) {
+        try {
+            let history = this.#loadedGalaxies[instance];
+            if(history)
+                return true;
+
+            const file = this.#getFilePathForHistory(instance);
+            return fs.existsSync(file);
+        }
+        catch (err) {
+            throw "Failed to check if history exists for " + instance + ". Cause: " + err;
+        }
+    }
+
     getHistory(instance) {
         try {
             let history = this.#loadedGalaxies[instance];
@@ -32,7 +46,17 @@ export default class HistoryManager {
         }
     }
 
+    /**
+     * Given a galaxy data dump from the game, will create a new history file with no snapshot/undo entries.
+     *
+     * @param payload   Full galactic data dump from the game.
+     */
     processNewInstance(payload) {
+
+        if(this.hasHistory(payload.instance)) {
+            throw "History file already exists for instance " + payload.instance;
+        }
+
         const file = this.#getFilePathForHistory(payload.instance);
         const historyData = {
             start:DateTime.now().toISO(), base:payload.data,
@@ -47,8 +71,14 @@ export default class HistoryManager {
         });
     }
 
+    /**
+     * Given a system, will check for differences and apply as needed.
+     *
+     * @param sys   The System to check against.
+     * @param instance  The galaxy to check against.
+     */
     applySystemUpdate(sys, instance) {
-        const history = this.fetchHistory(instance);
+        const history = this.getHistory(instance);
         sys.type = "system";
         const curState = history.current;
         const storedSys = this.#getById(curState.stellar_systems, sys.id);
@@ -65,6 +95,7 @@ export default class HistoryManager {
             delete u.score;
             delete u.receivedAt;
             u.time = history.currentTime;
+            u.type = "system";
 
             // Clean up the current snapshot
             sys.time = DateTime.now().toISO();
@@ -84,6 +115,44 @@ export default class HistoryManager {
 
             this.#saveHistoryToDisk(history);
         }
+    }
+
+    /**
+     * Checks all the provided sectors against the current state of the galaxy based on the instance
+     * provided. Updates sectors if ownership changed.
+     *
+     * @param sectors   List of sectors to check for differences.
+     * @param instance  Integer representing the game instance to check against.
+     */
+    applySectorsUpdate(sectors, instance) {
+        if(!sectors)
+            return;
+
+        let history = this.getHistory(instance);
+
+        sectors.forEach(sec => {
+            let id = sec.id;
+            let curr = this.#getById(history.current.sectors, id);
+            if(curr.owner !== sec.owner) {
+                sec.type = "sector";
+                sec.time = DateTime.now().toISO();
+                delete sec.adjacent;
+                delete sec.centroid;
+                delete sec.points;
+
+                const u = structuredClone(curr);
+                u.time = history.currentTime;
+                u.type = "sector";
+
+                history.snapshots.push(sec);
+                history.undo.push(u);
+
+                curr.owner = sec.owner;
+                curr.division = sec.division;
+
+                this.#saveHistoryToDisk(history);
+            }
+        });
     }
 
     #getFilePathForHistory(instance) {
