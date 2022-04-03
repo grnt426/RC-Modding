@@ -151,16 +151,7 @@ app.post('/incr_update', (req, res) => {
             else if(update.player_player) {
                 let d = update.player_player;
                 console.info("Got a player update.");
-
-                let p = players[instance];
-                if(!p) {
-                    p = new Player(instance, DateTime.now().toSeconds());
-                    players[instance] = p;
-                }
-
-                p.updateCredit(d.credit);
-                p.updateIdeo(d.ideology);
-                p.updateTech(d.technology);
+                updatePlayerData(instance, d);
 
                 // console.debug(update.player_player);
                 // console.debug(Object.keys(update.player_player));
@@ -242,18 +233,10 @@ app.post('/update', (req, res) => {
                     sectorIdToName[sec.id] = sec.name;
                 });
             }
-
-            // DEPRECATED
             else if(payload.type === "player" && false) {
+                console.debug("Got init player data");
                 let data = payload.data;
-                console.debug("Received Player data: " + JSON.stringify(data));
-                personalSheet.getCellByA1("B2").value = data.credits;
-                personalSheet.getCellByA1("C2").value = data.tech;
-                personalSheet.getCellByA1("D2").value = data.ideo;
-                personalSheet.getCellByA1("B3").value = data.creditIn;
-                personalSheet.getCellByA1("C3").value = data.techIn;
-                personalSheet.getCellByA1("D3").value = data.ideoIn;
-                personalSheet.saveUpdatedCells();
+                updatePlayerData(payload.instance, data);
             }
             else if(payload.type === "galaxy") {
                 console.info("Received galaxy");
@@ -344,30 +327,51 @@ process.on('SIGTERM', () => {
     });
 });
 
-setInterval(estimateIncomeValues, 10_000);
+setInterval(estimateIncomeValues, 60_000);
 
 function estimateIncomeValues() {
     try {
         players.forEach(p => {
             p.calcResourceTotals(DateTime.now().toSeconds());
             if(p.gameInstanceId === 2713) {
-                personalSheet.getCellByA1("B2").value = p.resources.cred.value;
-                personalSheet.getCellByA1("C2").value = p.resources.tech.value;
-                personalSheet.getCellByA1("D2").value = p.resources.ideo.value;
-                personalSheet.getCellByA1("B3").value = p.resources.cred.change;
-                personalSheet.getCellByA1("C3").value = p.resources.cred.change;
-                personalSheet.getCellByA1("D3").value = p.resources.cred.change;
-                personalSheet.saveUpdatedCells().then(r => {
-                    if(r) {
-                        console.error("Response from Sheets after saving player income: " + r);
-                    }
-                });
+                updateIncomeSheets(p);
             }
         });
     }
     catch(err) {
         console.error("Failed to calculate player income" + err);
     }
+}
+
+function updatePlayerData(instance, data) {
+    let p = players[instance];
+    let created = false;
+    if(!p) {
+        p = new Player(instance, DateTime.now().toSeconds());
+        players[instance] = p;
+        created = true;
+    }
+
+    p.updateCredit(data.credit);
+    p.updateIdeo(data.ideology);
+    p.updateTech(data.technology);
+
+    if(created)
+        updateIncomeSheets(p);
+}
+
+function updateIncomeSheets(player) {
+    personalSheet.getCellByA1("B2").value = player.resources.cred.value;
+    personalSheet.getCellByA1("C2").value = player.resources.tech.value;
+    personalSheet.getCellByA1("D2").value = player.resources.ideo.value;
+    personalSheet.getCellByA1("B3").value = player.resources.cred.change;
+    personalSheet.getCellByA1("C3").value = player.resources.tech.change;
+    personalSheet.getCellByA1("D3").value = player.resources.ideo.change;
+    personalSheet.saveUpdatedCells().then(r => {
+        if(r) {
+            console.error("Response from Sheets after saving player income: " + r);
+        }
+    });
 }
 
 function fetchHistory(instance) {
