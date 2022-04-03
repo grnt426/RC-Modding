@@ -1,5 +1,5 @@
 {
-  "name": "RCMods",
+  "name": "rc-mods",
   "version": "1.0.0",
   "description": "Modding Tools for Rising Constellations",
   "main": "receiver.mjs",
@@ -10,15 +10,16 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.26.0",
-    "debundle": "^0.5.4",
     "google-spreadsheet": "^3.2.0",
-    "express": "^4.17.3"
+    "express": "^4.17.3",
+    "realistic-structured-clone": "^2.0.3",
+    "serve-favicon": "^2.5.0",
+    "cors": "^2.8.5",
+    "luxon": "^2.3.1"
   },
   "devDependencies": {
     "xhr2": "^0.2.1",
-    "cors": "^2.8.5",
-    "luxon": "^2.3.1",
-    "realistic-structured-clone": "^2.0.3",
-    "serve-favicon": "^2.5.0"
+    "prompt": "^1.2.2",
+    "mocha": "^9.2.2"
   }
 }
