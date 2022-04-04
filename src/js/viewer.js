@@ -229,7 +229,10 @@ function animateHistory(repeat = true) {
         let sec = snap;
         let id = sec.id;
         console.debug(JSON.stringify(sec));
-        console.debug("Sector flipped: " + sec.name + " to " + sec.owner);
+        systemLog.prepend(
+            wrapTextInFaction(sec.owner.charAt(0).toUpperCase() + sec.owner.slice(1), sec.owner) + " controls " +
+            sec.name + "<br />"
+        );
 
         galaxy.sectors[id].owner = sec.owner;
         galaxy.sectors[id].division = sec.division;
@@ -251,11 +254,12 @@ function animateHistory(repeat = true) {
             systemLog.prepend(
                 wrapTextInFaction(sys.owner, sys.faction) + " colonized " + systemData[id].name + "<br />"
             );
-        else
+        else {
             systemLog.prepend(
                 wrapTextInFaction(sys.owner, sys.faction) + " took " + systemData[id].name +
                 " from " + wrapTextInFaction(prev.owner, prev.faction) + "<br />"
             );
+        }
 
         prev.owner = sys.owner;
         prev.faction = sys.faction;
@@ -272,7 +276,12 @@ function animateHistory(repeat = true) {
     update = true;
     historyAnimIndex++;
 
-    if(repeat)
+    // If the very next update is a sector update, then we want to show that
+    // immediately.
+    if(historyAnimIndex < galaxyHistory.snapshots.length && galaxyHistory.snapshots[historyAnimIndex].type === "sector") {
+        animateHistory(repeat);
+    }
+    else if(repeat)
         animTimer = setTimeout(animateHistory, 2000);
 }
 

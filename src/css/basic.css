@@ -1,6 +1,11 @@
-div {
+span.systemlog {
     font: 16px sans-serif;
     color: darkgray;
+    overflow-y:auto;
+    overflow-x:clip;
+    height: 800px;
+    width: 400px;
+    vertical-align: top;
 }
 
 span.tet {

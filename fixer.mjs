@@ -14,8 +14,18 @@ const numbersOnly = {
     properties: {
         value: {
             pattern: /^[0-9]+$/,
-            message: 'Instance must only be numbers',
+            message: 'Must only be numbers',
             required: true
+        }
+    }
+};
+
+const yesNo = {
+    properties: {
+        value: {
+            pattern: /^[YNyn]?$/,
+            message: 'Only Y, N, n, y are accepted',
+            required: false
         }
     }
 };
@@ -24,6 +34,7 @@ const man = new HistoryManager("snapshots/");
 let instance = 0;
 let history = null;
 let running = true;
+prompt.start();
 
 while(running) {
 
@@ -33,6 +44,8 @@ while(running) {
             "0. Load instance\n" +
             "1. Check missing types\n" +
             "2. Fix missing types\n" +
+            "3. Fix Sectors' Times\n" +
+            "90. Save to Disk\n" +
             "99. Quit\n");
 
         if(history) {
@@ -49,13 +62,20 @@ while(running) {
                 console.info("Instance ID: ");
                 instance = await readInt()
                 history = man.getHistory(instance);
+                console.info("Snapshots: " + history.snapshots.length);
                 break;
             case 1:
                 console.info("Snaps missing types: " + checkMissingTypes(history).length);
                 break;
             case 2:
                 fixMissingTypes(checkMissingTypes(history));
+                break;
+            case 3:
+                await askToChangeDateOnEachSector(findSectorsInSnapshots(history));
+                break;
+            case 90:
                 man.saveHistoryToDisk(history);
+                console.info("Saved to disk.")
                 break;
             case 99:
                 running = false;
@@ -78,6 +98,29 @@ while(running) {
 
 async function readInt() {
     return parseInt((await prompt.get(numbersOnly)).value);
+}
+
+function findSectorsInSnapshots(history) {
+    let sectors = [];
+
+    history.snapshots.forEach(s => {
+        if(s.type === "sector" && ![3, 4, 5].includes(s.id)) {
+            sectors.push(s);
+        }
+    });
+
+    return sectors;
+}
+
+async function askToChangeDateOnEachSector(sectors) {
+    for(const s of sectors) {
+        console.info(s.name + " (" + s.id + ") @ " + s.time);
+        console.info("Change time? Y/N");
+        let v = (await prompt.get(yesNo)).value;
+        if(v && (v === "Y" || v === "y")) {
+            s.time = (await prompt.get('date')).date;
+        }
+    }
 }
 
 function checkMissingTypes(history) {
