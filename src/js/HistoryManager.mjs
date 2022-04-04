@@ -113,7 +113,7 @@ export default class HistoryManager {
             storedSys.status = sys.status;
             history.currentTime = sys.time;
 
-            this.#saveHistoryToDisk(history);
+            this.saveHistoryToDisk(history);
         }
     }
 
@@ -150,7 +150,21 @@ export default class HistoryManager {
                 curr.owner = sec.owner;
                 curr.division = sec.division;
 
-                this.#saveHistoryToDisk(history);
+                this.saveHistoryToDisk(history);
+            }
+        });
+    }
+
+    /**
+     * Should NOT need to call this function manually.
+     *
+     * Synchronous write to disk.
+     * @param history   The history JSON to write to disk.
+     */
+    saveHistoryToDisk(history) {
+        fs.writeFileSync(this.#getFilePathForHistory(history.instance), JSON.stringify(history), err => {
+            if(err) {
+                throw "[CRITICAL] FAILED TO SAVE HISTORY instance '" + history.instance + "': " + err;
             }
         });
     }
@@ -167,13 +181,5 @@ export default class HistoryManager {
         });
 
         return res;
-    }
-
-    #saveHistoryToDisk(history) {
-        fs.writeFileSync(this.#getFilePathForHistory(history.instance), JSON.stringify(history), err => {
-            if(err) {
-                throw "[CRITICAL] FAILED TO SAVE HISTORY UPDATE: " + err;
-            }
-        });
     }
 }
