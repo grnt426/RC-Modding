@@ -58,8 +58,16 @@ function loadImage(name, url, x, y) {
 
 function processData() {
     try {
+
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        let instance = 2713; // latest legacy
+        if(urlParams.has("instance")) {
+            instance = urlParams.get("instance");
+        }
+
         $.ajax({
-            url: HOSTNAME + (DEBUG_FLAGS.DEV_MODE ? "/galaxy/replay/2713" : "/compressed.json"),
+            url: HOSTNAME + (DEBUG_FLAGS.DEV_MODE ? "/galaxy/replay/" + instance : "replays/" + instance + "/history.json"),
             success: function( result ) {
                 galaxyHistory = result;
 
