@@ -42,9 +42,10 @@ while(running) {
 
         console.info(
             "0. Load instance\n" +
-            "1. Check missing types\n" +
+            "1. Health Check\n" +
             "2. Fix missing types\n" +
             "3. Fix Sectors' Times\n" +
+            "4. Fix Players Joining\n" +
             "90. Save to Disk\n" +
             "99. Quit\n");
 
@@ -66,12 +67,16 @@ while(running) {
                 break;
             case 1:
                 console.info("Snaps missing types: " + checkMissingTypes(history).length);
+                console.info("Players Joined Marked as Colonized: " + findJoiningPlayers(history).length);
                 break;
             case 2:
                 fixMissingTypes(checkMissingTypes(history));
                 break;
             case 3:
                 await askToChangeDateOnEachSector(findSectorsInSnapshots(history));
+                break;
+            case 4:
+                await fixJoiningPlayers(findJoiningPlayers(history));
                 break;
             case 90:
                 man.saveHistoryToDisk(history);
@@ -94,6 +99,37 @@ while(running) {
 
         console.error("ERROR: " + err);
     }
+}
+
+function findJoiningPlayers(history) {
+    const playersInBaseImage = [];
+    const playersWhoJoined = [];
+
+    // first pass: find out who is in the base image
+    Object.values(history.base.stellar_systems).forEach(s =>  {
+        if(s.owner) {
+            playersInBaseImage.push(s.owner);
+        }
+    });
+
+    // Next, find all players who have snaps with them taking ownership and not marked as joining
+    Object.values(history.snapshots).forEach(s => {
+        if(s.type === "system" && s.joined) {
+            playersInBaseImage.push(s.owner);
+        }
+        if(s.type === "system" && !s.joined && !playersInBaseImage.includes(s.owner)) {
+            playersInBaseImage.push(s.owner);
+            playersWhoJoined.push(s);
+        }
+    });
+
+    return playersWhoJoined;
+}
+
+async function fixJoiningPlayers(snaps) {
+    Object.values(snaps).forEach(s => {
+        s.joined = true;
+    });
 }
 
 async function readInt() {
@@ -131,7 +167,6 @@ function checkMissingTypes(history) {
     history.undo.forEach(s => {
         if(!s.type) missingSnaps.push(s);
     });
-    console.info("Snapshots and Undo missing type: " + missingSnaps.length);
 
     return missingSnaps;
 }

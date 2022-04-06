@@ -58,7 +58,7 @@ console.info("Data loaded from sheets");
 //     }
 // });
 
-app.use(express.static('public/images'));
+app.use('/images', express.static('public/images'));
 app.use(express.static('src'));
 
 // Check if a Game has already received the base galactic data by instance ID

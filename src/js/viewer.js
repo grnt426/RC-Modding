@@ -42,13 +42,11 @@ let historyAnimIndex = 0;
 let linesWritten = 0;
 let prevTime = false;
 
-const IMAGES = {
+const IMAGES = {};
 
-};
-
-loadImage("play", HOSTNAME + "/play.png");
-loadImage("prev", HOSTNAME + "/prev.png");
-loadImage("next", HOSTNAME + "/next.png");
+loadImage("play", HOSTNAME + "/images/play.png");
+loadImage("prev", HOSTNAME + "/images/prev.png");
+loadImage("next", HOSTNAME + "/images/next.png");
 
 function loadImage(name, url, x, y) {
     let img = new Image();
@@ -67,7 +65,7 @@ function processData() {
         }
 
         $.ajax({
-            url: HOSTNAME + (DEBUG_FLAGS.DEV_MODE ? "/galaxy/replay/" + instance : "replays/" + instance + "/history.json"),
+            url: HOSTNAME + (DEBUG_FLAGS.DEV_MODE ? "/galaxy/replay/" + instance : "/replays/" + instance + "/history.json"),
             success: function( result ) {
                 galaxyHistory = result;
 
@@ -258,15 +256,52 @@ function animateHistory(repeat = true) {
             systemLog.prepend(
                 wrapTextInFaction(prev.owner, prev.faction) + " abandoned " + systemData[id].name + "<br />"
             );
-        } else if(prev.owner === null)
+        }
+        else if(sys.joined) {
             systemLog.prepend(
-                wrapTextInFaction(sys.owner, sys.faction) + " colonized " + systemData[id].name + "<br />"
+                wrapTextInFaction(sys.owner, sys.faction) + " joined the legacy!<br />"
             );
+        }
+        else if(prev.owner === null) {
+            if(prev.status === "uninhabited"){
+                systemLog.prepend(
+                    wrapTextInFaction(sys.owner, sys.faction) + " colonized " + systemData[id].name + "<br />"
+                );
+            }
+            else if(prev.status === "inhabited_neutral" && sys.status === "inhabited_dominion") {
+                systemLog.prepend(
+                    wrapTextInFaction(sys.owner, sys.faction) +
+                    " claimed " + systemData[id].name + " as a dominion.<br />"
+                );
+            }
+            else {
+                console.error("Unknown state change for: " + JSON.stringify(snap));
+            }
+        }
         else {
-            systemLog.prepend(
-                wrapTextInFaction(sys.owner, sys.faction) + " took " + systemData[id].name +
-                " from " + wrapTextInFaction(prev.owner, prev.faction) + "<br />"
-            );
+            if(prev.owner === sys.owner) {
+                if(prev.status === "inhabited_dominion" && sys.status === "inhabited_player") {
+                    systemLog.prepend(
+                        wrapTextInFaction(sys.owner, sys.faction) +
+                        " converted the dominion " + systemData[id].name + " into a system.<br />"
+                    );
+                }
+                else if(prev.status === "inhabited_player" && sys.status === "inhabited_dominion") {
+                    systemLog.prepend(
+                        wrapTextInFaction(sys.owner, sys.faction) +
+                        " converted the system " + systemData[id].name + " into a dominion.<br />"
+                    );
+                }
+                else {
+                    console.error("Unknown state change for: " + JSON.stringify(snap));
+                }
+            }
+            else {
+                systemLog.prepend(
+                    wrapTextInFaction(sys.owner, sys.faction) + " took " + systemData[id].name +
+                    " from " + wrapTextInFaction(prev.owner, prev.faction) + "<br />"
+                );
+            }
         }
 
         prev.owner = sys.owner;
