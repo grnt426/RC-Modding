@@ -289,8 +289,8 @@ function renderer() {
 
     if(zoom) {
         zoomLevel += (-1 * zoom * (zoomLevel > 20 ? 0.04 : .005));
-        if(zoomLevel < 1)
-            zoomLevel = 1;
+        if(zoomLevel < 2)
+            zoomLevel = 2;
         if(zoomLevel > 150)
             zoomLevel = 150;
 
@@ -326,7 +326,20 @@ function renderer() {
                 prevPoint[1] = y;
             });
             context.fill();
+
+            // Draw sector names
+            let fontAdjust = 12 - zoomLevel;
+            fontAdjust = fontAdjust < 0 ? 0 : fontAdjust;
+            fontAdjust = 30 - fontAdjust;
+            context.font = fontAdjust + 'px sans-serif';
+            context.fillStyle = 'rgb(126,126,126, 50)';
+            let x = (sec.centroid[0] - galCenter.x - translation.x) * zoomLevel - translation.x + canvas.width / 2;
+            x -= sec.name.length * 5;
+            let y = (500 - ((sec.centroid[1] - galCenter.y + translation.y) * zoomLevel)) - translation.y + 100;
+            y += 7;
+            context.fillText(sec.name, x,y);
         });
+
 
         // Draw stars
         Object.values(galaxy.stellar_systems).forEach(val => {
