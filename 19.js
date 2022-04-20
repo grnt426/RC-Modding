@@ -98,8 +98,17 @@
                 return h()(t, [{
                     key: "update", value: function(t) {
 
+                        // Granite - Incr Update
                         try {
+
+                            let credit = y.a.state.game.player.credit;
+                            let details = credit.details;
+                            details.rolling = [];
+                            details.rolling.push({"reason":"Hourly", "value": credit.change * 20});
+                            details.rolling.push({"reason":"Daily", "value": credit.change * 20 * 24});
+
                             if(y.a.state.granite) {
+
                                 let granite = y.a.state.granite;
                                 if(granite.readyForUpdates) {
                                     if(granite.heldUpdates) {
@@ -122,7 +131,7 @@
                             }
                         }
                         catch(err) {
-                            console.error("ERROR: Went wrong in processing update: " + err);
+                            console.error("ERROR: Something went wrong in processing update: " + err);
                         }
 
                         if(t.global_galaxy && (this.createSystem(t.global_galaxy.stellar_systems), this.updateSectors(t.global_galaxy.sectors), this.blackholes = t.global_galaxy.blackholes), t.global_galaxy_system && this.updateSystems([t.global_galaxy_system], {}), t.faction_faction && (this.updateSystems([], t.faction_faction.contacts), this.updateRadars(t.faction_faction.radars)), t.detected_objects && this.updateDetectedObjects(t.detected_objects), t.faction_faction_contact) {
@@ -305,6 +314,9 @@
                 })
             }, {
                 key: "_update", value: (a = r()(c.a.mark((function t() {
+
+
+
                     return c.a.wrap((function(t) {
                         for(; ;) switch(t.prev = t.next) {
                             case 0:
@@ -1472,6 +1484,8 @@
             }, {
                 key: "init", value: (a = r()(c.a.mark((function t() {
 
+                    // Granite - Start Up
+
                     // The client re-entered the game
                     if(y.a.state.granite){
 
@@ -1561,7 +1575,15 @@
                                         if(y.a.state.game.galaxy.sectors) {
                                             granite.awaitingSectorDelay = false;
                                             granite.postData(y.a.state.game.galaxy.sectors, "sectors");
+                                            granite.postData(y.a.state.game.player, "player");
                                         }
+
+                                        let credit = y.a.state.game.player.credit;
+                                        let details = credit.details;
+                                        details.rolling = [];
+
+                                        details.rolling.push({"reason":"Hourly", "value": credit.change * 20});
+                                        details.rolling.push({"reason":"Daily", "value": credit.change * 20 * 24});
                                     }
 
                                     if(y.a.state.game.player !== undefined && y.a.state.game.player !== null && y.a.state.game.player.account_id != null) {
@@ -1590,32 +1612,6 @@
 
                                             if(granite.keepAlive % 100 === 0)
                                                 granite.debug("Keep Alive");
-
-                                            /*if(granite.playerUpdateTime % 20 === 0 && granite.thing) {
-                                                granite.debug("About to send player data...");
-                                                granite.debug(granite);
-
-
-                                                y.a.state.granite.postData(
-                                                    {
-                                                        "credits":y.a.state.granite.thing.player.state.game.player.credit.value, "creditIn":y.a.state.granite.data.state.game.player.credit.change,
-                                                        "tech":y.a.state.granite.thing.player.state.game.player.technology.value, "techIn":y.a.state.granite.thing.state.game.player.technology.change,
-                                                        "ideo":y.a.state.granite.thing.player.state.game.player.ideology.value, "ideoIn":y.a.state.granite.thing.state.game.player.ideology.change,
-                                                    },
-                                                    "player"
-                                                );
-
-
-                                                y.a.state.granite.postData(
-                                                    {
-                                                        "credits":y.a.state.granite.data.player.state.game.player.credit.value, "creditIn":y.a.state.granite.data.state.game.player.credit.change,
-                                                        "tech":y.a.state.granite.data.player.state.game.player.technology.value, "techIn":y.a.state.granite.data.state.game.player.technology.change,
-                                                        "ideo":y.a.state.granite.data.player.state.game.player.ideology.value, "ideoIn":y.a.state.granite.data.state.game.player.ideology.change,
-                                                    },
-                                                    "player"
-                                                );
-
-                                            }*/
                                         }
                                     }
                                     else {
@@ -4140,9 +4136,9 @@
                     expression: "$t(`card.ship.maintenance`)"
                 }], staticClass: "simple-bonus"
             }, [t._v("\n                  " + t._s(t.shipData.maintenance_cost) + "\n                  "), a("svgicon", {attrs: {name: "resource/credit"}})], 1)])]), t._v(" "), a("hr"), t._v(" "), a("div", {staticClass: "ship-skills"}, [a("div", {staticClass: "skills-text"}, [a("div", [t._v(t._s(t.$t("card.ship.hull")))]), t._v(" "), a("div", [a("strong", [t._v(t._s(t.shipData.unit_hull))]), t._v(" "), a("svgicon", {attrs: {name: "ship/hull"}})], 1)]), t._v(" "), a("div", {staticClass: "skills-line"}, [a("span", {style: t.width(100 * Math.log(t.shipData.unit_hull), 1e3)})])]), t._v(" "), a("div", {staticClass: "ship-skills"}, [a("div", {staticClass: "skills-text"}, [a("div", [t._v(t._s(t.$t("card.ship.maneuverability")))]), t._v(" "), a("div", [a("strong", [t._v(t._s(t.formatPercent(t.unitHandling)))]), t._v(" "), a("svgicon", {attrs: {name: "ship/handling"}})], 1)]), t._v(" "), a("div", {staticClass: "skills-line"}, [a("span", {style: t.width(t.unitHandling, 100)})])]), t._v(" "), a("div", {staticClass: "ship-skills"}, [a("div", {staticClass: "skills-text"}, [a("div", [t._v(t._s(t.$t("card.ship.energy_strikes")))]), t._v(" "), a("div", [a("strong", [t._v(t._s(t.formatList(t.unitEnergyStrikes)))]), t._v(" "), a("svgicon", {attrs: {name: "ship/energy_strikes"}})], 1)]), t._v(" "), a("div", {staticClass: "skills-line"}, t._l(t.unitEnergyStrikes, (function(e, s) {
-                return a("span", {key: "energy-strike-" + t.shipKey + "-" + s, style: t.width(e, 400)})
+                return a("span", {key: "energy-strike-" + t.shipKey + "-" + s, style: t.width(e, 1300)})
             })), 0)]), t._v(" "), a("div", {staticClass: "ship-skills"}, [a("div", {staticClass: "skills-text"}, [a("div", [t._v(t._s(t.$t("card.ship.explosive_strikes")))]), t._v(" "), a("div", [a("strong", [t._v(t._s(t.formatList(t.unitExplosiveStrikes)))]), t._v(" "), a("svgicon", {attrs: {name: "ship/explosive_strikes"}})], 1)]), t._v(" "), a("div", {staticClass: "skills-line"}, t._l(t.unitExplosiveStrikes, (function(e, s) {
-                return a("span", {key: "explosive-strike-" + t.shipKey + "-" + s, style: t.width(e, 400)})
+                return a("span", {key: "explosive-strike-" + t.shipKey + "-" + s, style: t.width(e, 1100)})
             })), 0)]), t._v(" "), a("div", {staticClass: "ship-skills"}, [a("div", {staticClass: "skills-text"}, [a("div", [t._v(t._s(t.$t("card.ship.shields")))]), t._v(" "), a("div", [a("strong", [t._v(t._s(t.formatPercent(t.unitShield)))]), t._v(" "), a("svgicon", {attrs: {name: "ship/shield"}})], 1)]), t._v(" "), a("div", {staticClass: "skills-line"}, [a("span", {style: t.width(t.unitShield, 100)})])]), t._v(" "), a("div", {staticClass: "ship-skills"}, [a("div", {staticClass: "skills-text"}, [a("div", [t._v(t._s(t.$t("card.ship.flak")))]), t._v(" "), a("div", [a("strong", [t._v(t._s(t.formatPercent(t.unitInterception)))]), t._v(" "), a("svgicon", {attrs: {name: "ship/interception"}})], 1)]), t._v(" "), a("div", {staticClass: "skills-line"}, [a("span", {style: t.width(t.unitInterception, 100)})])])]), t._v(" "), a("div", {staticClass: "card-panel"}, [a("h2", [t._v(t._s(t.$t("card.ship.about")))])])])])])]), t._v(" "), [t.showCost ? a("div", {staticClass: "card-cost"}, [a("div", {staticClass: "icon-value"}, [t._v("\n        " + t._s(t._f("integer")(t.shipData.production)) + "\n        "), a("svgicon", {attrs: {name: "resource/production"}}), t._v(" "), t.system ? [t._v("\n          (" + t._s(t._f("counter")(t.shipData.production / t.system.production.value * t.tickToSecondFactor)) + ")\n        ")] : t._e()], 2), t._v(" "), a("div", {staticClass: "icon-value"}, [t._v("\n        " + t._s(t._f("integer")(t.shipData.credit_cost)) + "\n        "), a("svgicon", {attrs: {name: "resource/credit"}})], 1), t._v(" "), a("div", {staticClass: "icon-value"}, [t._v("\n        " + t._s(t._f("integer")(t.shipData.technology_cost)) + "\n        "), a("svgicon", {attrs: {name: "resource/technology"}})], 1)]) : t._e()]], 2)
         }), [], !1, null, null, null).exports, We = {
             name: "resource-detail",
@@ -10503,7 +10499,7 @@
                     expression: "$t('navbar.bottombar.patents')"
                 }],
                 staticClass: "mini-panel-button left",
-                class: {active: "patent" === t.activeMiniPanel.name, visible: t.player.technology.change > 0},
+                class: {active: "patent" === t.activeMiniPanel.name, visible: true}, // always show tech patents
                 on: {
                     click: function(e) {
                         return t.toggleMiniPanel("patent")
@@ -10517,7 +10513,7 @@
                     expression: "$t('navbar.bottombar.lexes')"
                 }],
                 staticClass: "mini-panel-button right",
-                class: {active: "doctrine" === t.activeMiniPanel.name, visible: t.player.ideology.change > 0},
+                class: {active: "doctrine" === t.activeMiniPanel.name, visible: true}, // always show ideo lex
                 on: {
                     click: function(e) {
                         return t.toggleMiniPanel("doctrine")
