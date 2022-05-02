@@ -235,10 +235,14 @@ function animateHistory(repeat = true) {
         let sec = snap;
         let id = sec.id;
         console.debug(JSON.stringify(sec));
-        systemLog.prepend(
-            wrapTextInFaction(sec.owner.charAt(0).toUpperCase() + sec.owner.slice(1), sec.owner) + " controls " +
-            sec.name + "<br />"
-        );
+        if(sec.owner)
+            systemLog.prepend(
+                wrapTextInFaction(sec.owner.charAt(0).toUpperCase() + sec.owner.slice(1), sec.owner) + " controls " +
+                sec.name + "<br />"
+            );
+        else {
+            console.error("What is this update???")
+        }
 
         galaxy.sectors[id].owner = sec.owner;
         galaxy.sectors[id].division = sec.division;
