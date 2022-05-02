@@ -241,7 +241,7 @@ function animateHistory(repeat = true) {
                 sec.name + "<br />"
             );
         else {
-            console.error("What is this update???")
+            systemLog.prepend(sec.name + " was abandoned!<br />");
         }
 
         galaxy.sectors[id].owner = sec.owner;
