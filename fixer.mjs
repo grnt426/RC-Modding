@@ -1,5 +1,5 @@
 /**
- * I shouldn't need this file, but I haven't yet isolate where all the errors are coming from, and there
+ * I shouldn't need this file, but I haven't yet isolated where all the errors are coming from, and there
  * are errors from fixed bugs that haven't been corrected. To make this process less annoying, this tool
  * exists to make the process faster and easier to work with.
  */
@@ -46,6 +46,7 @@ while(running) {
             "2. Fix missing types\n" +
             "3. Fix Sectors' Times\n" +
             "4. Fix Players Joining\n" +
+            "5. Mark as Legacy\n" +
             "90. Save to Disk\n" +
             "99. Quit\n");
 
@@ -68,6 +69,7 @@ while(running) {
             case 1:
                 console.info("Snaps missing types: " + checkMissingTypes(history).length);
                 console.info("Players Joined Marked as Colonized: " + findJoiningPlayers(history).length);
+                console.info("Missing Types: " + checkMissingTypes(history).length);
                 break;
             case 2:
                 fixMissingTypes(checkMissingTypes(history));

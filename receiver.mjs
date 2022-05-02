@@ -235,17 +235,11 @@ app.post('/update', (req, res) => {
             }
             else if(payload.type === "galaxy") {
                 console.info("Received galaxy");
-                historyManager.processNewInstance(payload);
 
-                // OLD SNAPSHOT FORMAT TYPE
-                const fileData = {start:(DateTime.now()).toISO(), base:payload.data};
-                fs.writeFile(dest + '/base.json', JSON.stringify(fileData), err => {
-                    if (err) {
-                        console.error(err)
-                        return
-                    }
-                    //file written successfully
-                });
+                // Clients send this regardless of whether or not we need it
+                if(!historyManager.hasHistory(payload.instance)) {
+                    historyManager.processNewInstance(payload);
+                }
             }
             else if(payload.type === "galaxy_snapshot") {
                 console.info("Received galaxy snapshot");
@@ -313,7 +307,7 @@ function estimateIncomeValues() {
     try {
         players.forEach(p => {
             p.calcResourceTotals(DateTime.now().toSeconds());
-            if(p.gameInstanceId === 2713) {
+            if(p.gameInstanceId === 2731) {
                 updateIncomeSheets(p);
             }
         });

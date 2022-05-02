@@ -133,3 +133,19 @@ getClosestSystemId: function(t) {
         return e.distance(a, t.position) - e.distance(a, s.position)
     }))[0].id
 }
+
+// Market window
+name: "market-sell", data: function() {
+
+// Patent/Lex buttons at bottom of screen
+value: t.$t("navbar.bottombar.patents"),
+
+// Resource detail screen
+ }), t._v(" "), a("resource-detail", {
+                attrs: {
+                    slot: "popover",
+                    title: t.$t("data.bonus_pipeline_in.player_credit.name"),
+                    description: t.$t("resource-description.credit"),
+                    value: t.player.credit.change,
+                    details: t.player.credit.details
+                }, slot: "popover"

@@ -453,6 +453,7 @@ function wrapTextInFaction(text, faction) {
         case "cardan": style = "car"; break;
         case "myrmezir": style = "myr"; break;
         case "synelle": style = "syn"; break;
+        case "ark": style = "ark"; break;
     }
 
     return "<span class='" + style + "'>" + text + "</span>";
@@ -467,6 +468,8 @@ function factionColor(faction, alpha = 1) {
         return 'rgb(219,42,62,'+alpha+')';
     } else if(faction === "synelle") {
         return 'rgb(80,200,20,'+alpha+')';
+    } else if(faction === "ark") {
+        return 'rgb(201,161,21,'+alpha+')';
     } else { // neutral
         return 'rgb(126,126,126,'+alpha+')';
     }
