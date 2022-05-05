@@ -6278,7 +6278,7 @@
                     key: e.key,
                     staticClass: "victory-factions-item",
                     class: ["f-" + t.getTheme(e.key)]
-                }, [a("div", {staticClass: "header"}, [a("div", {staticClass: "rank"}, [t._v(t._s(t.numberToRoman(s + 1)))]), t._v(" "), a("div", {staticClass: "title"}, [t._v(t._s(t.$t("data.faction." + e.key + ".name")))])]), t._v(" "), a("div", {staticClass: "body"}, t._l(12, (function(s) {
+                }, [a("div", {staticClass: "header"}, [a("div", {staticClass: "rank"}, [t._v(t._s(t.numberToRoman(s + 1)))]), t._v(" "), a("div", {staticClass: "title"}, [t._v(t._s(t.$t("data.faction." + e.key + ".name")))])]), t._v(" "), a("div", {staticClass: "body"}, t._l(14, (function(s) {
                     return a("span", {
                         key: "f" + e.key + "-c" + s,
                         class: {"is-active": s <= e.victory_points}
@@ -6518,7 +6518,10 @@
                         }
                     }
                 })
-            })), t._v(" "), 0 === t.characters.length ? a("span", [t._v("\n      " + t._s(t.$t("minipanel.market.characters_empty_state")) + "\n    ")]) : t._e()], 2), t._v(" "), ["technology", "ideology"].includes(t.offerType) || "character_deck" === t.offerType && t.deckAgent || "board_character" === t.offerType && t.boardAgent ? [a("div", {staticClass: "mpc-form"}, [a("div", {staticClass: "mpc-form-bloc"}, [["technology", "ideology"].includes(t.offerType) ? a("div", {staticClass: "mpc-h-input"}, [a("label", {attrs: {for: "mpc-quantity"}}, [t._v(t._s(t.$t("minipanel.market.quantity")))]), t._v(" "), a("div", {staticClass: "mpc-h-input-i"}, [a("input", {
+            })), t._v(" "), 0 === t.characters.length ? a("span", [t._v("\n      " + t._s(t.$t("minipanel.market.characters_empty_state")) + "\n    ")]) : t._e()], 2), t._v(" "), ["technology", "ideology"].includes(t.offerType) || "character_deck" === t.offerType && t.deckAgent || "board_character" === t.offerType && t.boardAgent ? [a("div", {
+                staticClass: "mpc-form",
+                staticStyle: {"margin-right": "10px"}
+            }, [a("div", {staticClass: "mpc-form-bloc"}, [["technology", "ideology"].includes(t.offerType) ? a("div", {staticClass: "mpc-h-input"}, [a("label", {attrs: {for: "mpc-quantity"}}, [t._v(t._s(t.$t("minipanel.market.quantity")))]), t._v(" "), a("div", {staticClass: "mpc-h-input-i"}, [a("input", {
                 directives: [{
                     name: "model",
                     rawName: "v-model.number",
@@ -6566,7 +6569,7 @@
                     id: "mpc-final",
                     disabled: "true"
                 }, domProps: {value: t._f("integer")(t.price + t.fees)}
-            }), t._v(" "), a("svgicon", {attrs: {name: "resource/credit"}})], 1)]), t._v(" "), a("hr"), t._v(" "), a("div", {staticClass: "mpc-v-input"}, [0 === t.allowedFactions.length ? a("profile-select", {
+            }), t._v(" "), a("svgicon", {attrs: {name: "resource/credit"}})], 1)])])]), t._v(" "), a("div", {staticClass: "mpc-form"}, [a("div", {staticClass: "mpc-form-bloc"}, [a("div", {staticClass: "mpc-v-input"}, [0 === t.allowedFactions.length ? a("profile-select", {
                 attrs: {
                     label: t.$t("minipanel.market.allowed_players"),
                     instanceId: t.instanceId,
